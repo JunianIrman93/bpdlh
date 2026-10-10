@@ -1,0 +1,49 @@
+{
+  "name": "laporlh-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node --env-file-if-exists=.env dist/main.js",
+    "bundle:admin": "node dist/modules/review/adapters/admin/bundle.js",
+    "migrate": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@adminjs/express": "^6.1.1",
+    "@adminjs/prisma": "^5.0.4",
+    "@prisma/client": "6.19.3",
+    "adminjs": "^7.8.17",
+    "bcrypt": "^6.0.0",
+    "express": "^5.3.0",
+    "express-formidable": "^1.2.0",
+    "express-rate-limit": "^8.7.1",
+    "express-session": "^1.19.0",
+    "jose": "^6.2.12",
+    "multer": "^2.4.0",
+    "pino": "^10.4.0",
+    "prisma": "6.19.3",
+    "tslib": "^2.8.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.19.0",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^22.20.5",
+    "@types/supertest": "^7.2.1",
+    "eslint": "^10.12.0",
+    "supertest": "^7.3.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}
