@@ -1,0 +1,123 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  FIELD_OFFICER
+  REVIEWER
+}
+
+enum ReportStatus {
+  UPLOADING
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum Category {
+  REHABILITASI_HUTAN_LAHAN
+  MANGROVE_PESISIR
+  PENGELOLAAN_SAMPAH
+  ENERGI_TERBARUKAN
+  PEMBERDAYAAN_MASYARAKAT
+  LAINNYA
+}
+
+enum AttachmentKind {
+  PHOTO
+  IMAGE
+  DOCUMENT
+  FILE
+}
+
+enum AttachmentState {
+  EXPECTED
+  UPLOADED
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         Role
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  deviceKeys      DeviceKey[]
+  reports         Report[]    @relation("ReportOwner")
+  reviewedReports Report[]    @relation("ReportReviewer")
+
+  @@map("users")
+}
+
+model DeviceKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  deviceId   String    @unique @map("device_id") @db.Uuid
+  publicKey  String    @map("public_key")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt DateTime  @map("last_used_at") @db.Timestamptz(3)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_keys")
+}
+
+model Report {
+  id                 String       @id @db.Uuid
+  userId             String       @map("user_id") @db.Uuid
+  title              String       @db.VarChar(120)
+  description        String       @db.VarChar(2000)
+  category           Category
+  activityDate       DateTime     @map("activity_date") @db.Date
+  latitude           Float
+  longitude          Float
+  accuracyM          Float        @map("accuracy_m")
+  locationCapturedAt DateTime     @map("location_captured_at") @db.Timestamptz(3)
+  isMockLocation     Boolean      @map("is_mock_location")
+  status             ReportStatus @default(UPLOADING)
+  reviewNote         String?      @map("review_note") @db.VarChar(500)
+  reviewedById       String?      @map("reviewed_by") @db.Uuid
+  reviewedAt         DateTime?    @map("reviewed_at") @db.Timestamptz(3)
+  version            Int          @default(1)
+  clientCreatedAt    DateTime     @map("client_created_at") @db.Timestamptz(3)
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user        User         @relation("ReportOwner", fields: [userId], references: [id])
+  reviewedBy  User?        @relation("ReportReviewer", fields: [reviewedById], references: [id])
+  attachments Attachment[]
+
+  @@index([userId, updatedAt])
+  @@index([status])
+  @@map("reports")
+}
+
+model Attachment {
+  id         String          @id @db.Uuid
+  reportId   String          @map("report_id") @db.Uuid
+  kind       AttachmentKind
+  fileName   String          @map("file_name") @db.VarChar(255)
+  mimeType   String          @map("mime_type")
+  sizeBytes  Int             @map("size_bytes")
+  sha256     String          @db.Char(64)
+  storageKey String          @map("storage_key")
+  state      AttachmentState @default(EXPECTED)
+  uploadedAt DateTime?       @map("uploaded_at") @db.Timestamptz(3)
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("attachments")
+}
