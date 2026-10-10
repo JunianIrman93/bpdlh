@@ -1,0 +1,1065 @@
+openapi: 3.0.3
+info:
+  title: LaporLH API
+  version: 1.0.0
+  description: >-
+    API pelaporan lapangan offline-first. Semua operasi tulis idempoten.
+    Waktu memakai ISO 8601 UTC dan nama kolom memakai snake_case.
+servers:
+  - url: /api/v1
+tags:
+  - name: Auth
+    description: Login, perpanjangan sesi dengan kunci perangkat, dan profil.
+  - name: Reports
+    description: Laporan dan lampirannya.
+  - name: Review
+    description: Keputusan verifikator.
+  - name: Ops
+    description: Pemeriksaan hidup dan kesiapan untuk platform hosting.
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Masuk dan mendaftarkan kunci perangkat
+      description: >-
+        Mendaftarkan kunci publik perangkat. Login baru dari device_id yang
+        sama menggantikan kunci sebelumnya.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Berhasil masuk
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/challenge:
+    post:
+      tags: [Auth]
+      operationId: issueChallenge
+      summary: Meminta nonce untuk perpanjangan sesi
+      description: >-
+        Nonce acak 256 bit, berlaku 60 detik, sekali pakai. Nonce juga
+        diberikan untuk device_id yang tidak dikenal.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeRequest'
+      responses:
+        '200':
+          description: Nonce diterbitkan
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshSession
+      summary: Menukar tanda tangan nonce dengan access token baru
+      description: >-
+        Yang ditandatangani adalah tiga baris teks yang dipisah baris baru:
+        laporlh-auth-v1, device_id, dan nonce (SHA256withECDSA, kurva P-256).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Access token baru
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/RefreshUnauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Mencabut kunci perangkat milik sesi
+      responses:
+        '204':
+          description: Kunci perangkat dicabut
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /me:
+    get:
+      tags: [Auth]
+      operationId: getMe
+      summary: Profil pengguna
+      responses:
+        '200':
+          description: Profil pengguna
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports:
+    get:
+      tags: [Reports]
+      operationId: listReports
+      summary: Daftar laporan
+      description: >-
+        Petugas melihat laporan miliknya, verifikator melihat semua. Diurutkan
+        menurut updated_at lalu id secara menaik agar kursor stabil.
+        updated_since bersifat inklusif; klien menyimpan server_time dari
+        respons terakhir yang berhasil dan memakainya pada permintaan berikut.
+      parameters:
+        - name: updated_since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          description: Nilai opak dari next_cursor.
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ReportStatus'
+      responses:
+        '200':
+          description: Satu halaman laporan
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ReportId'
+    put:
+      tags: [Reports]
+      operationId: upsertReport
+      summary: Membuat atau mengirim ulang laporan secara idempoten
+      description: |-
+        Daftar attachments adalah manifes: server mencatat tiap lampiran
+        dengan state EXPECTED, dan laporan menjadi SUBMITTED setelah semua
+        lampiran UPLOADED.
+
+        Aturan idempotensi:
+        - ID baru: 201 dan laporan dibuat dengan status UPLOADING.
+        - ID sudah ada, milik pengguna yang sama, isi identik: 200 dengan
+          status terkini, tanpa perubahan.
+        - ID sudah ada dengan status REJECTED: isi baru diterima, version
+          bertambah satu, status kembali UPLOADING.
+        - ID sudah ada dengan status lain dan isi berbeda: 409 REPORT_LOCKED.
+        - ID milik pengguna lain: 404.
+      x-roles: [FIELD_OFFICER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportInput'
+      responses:
+        '200':
+          description: Laporan sudah ada dan tidak berubah
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportReceipt'
+        '201':
+          description: Laporan dibuat, atau diterima ulang setelah ditolak
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportReceipt'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      tags: [Reports]
+      operationId: getReport
+      summary: Detail laporan beserta lampiran
+      responses:
+        '200':
+          description: Detail laporan
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports/{id}/attachments/{attachmentId}:
+    parameters:
+      - $ref: '#/components/parameters/ReportId'
+      - $ref: '#/components/parameters/AttachmentId'
+    put:
+      tags: [Reports]
+      operationId: uploadAttachment
+      summary: Mengunggah satu lampiran
+      description: |-
+        Server memvalidasi berurutan sebelum menyimpan:
+        1. Laporan ada dan milik pengguna; lampiran terdaftar pada manifes.
+        2. Ukuran sama dengan size_bytes pada manifes dan tidak melebihi 10 MB.
+        3. Tipe berkas, ditentukan dari isi, sama dengan mime_type manifes dan
+           termasuk daftar yang diizinkan.
+        4. SHA-256 yang dihitung server sama dengan sha256 manifes.
+
+        Unggahan ulang untuk lampiran yang sudah UPLOADED dengan checksum sama
+        dijawab 200 tanpa menulis ulang berkas. Saat lampiran terakhir selesai,
+        report_status menjadi SUBMITTED.
+      x-roles: [FIELD_OFFICER]
+      parameters:
+        - name: X-Content-SHA256
+          in: header
+          required: true
+          description: SHA-256 isi berkas, heksadesimal.
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{64}$'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Lampiran sudah tersimpan sebelumnya
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentReceipt'
+        '201':
+          description: Lampiran tersimpan
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentReceipt'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ChecksumMismatch'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports/{id}/attachments/{attachmentId}/file:
+    parameters:
+      - $ref: '#/components/parameters/ReportId'
+      - $ref: '#/components/parameters/AttachmentId'
+    get:
+      tags: [Reports]
+      operationId: downloadAttachment
+      summary: Mengunduh berkas lampiran
+      description: >-
+        Dikirim dengan Content-Disposition attachment dan
+        X-Content-Type-Options nosniff.
+      responses:
+        '200':
+          description: Isi berkas
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+            Content-Disposition:
+              schema:
+                type: string
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum: [nosniff]
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports/{id}/review:
+    parameters:
+      - $ref: '#/components/parameters/ReportId'
+    patch:
+      tags: [Review]
+      operationId: reviewReport
+      summary: Menetapkan VERIFIED atau REJECTED
+      description: >-
+        Hanya valid saat status SUBMITTED. Catatan wajib 5 sampai 500 karakter
+        untuk REJECTED dan opsional untuk VERIFIED.
+      x-roles: [REVIEWER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '200':
+          description: Ringkasan laporan yang diperbarui
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportSummary'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /health:
+    get:
+      tags: [Ops]
+      operationId: health
+      summary: Cek hidup, tanpa menyentuh basis data
+      security: []
+      servers:
+        - url: /
+      responses:
+        '200':
+          description: Proses hidup
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /ready:
+    get:
+      tags: [Ops]
+      operationId: ready
+      summary: Cek kesiapan, termasuk koneksi basis data
+      security: []
+      servers:
+        - url: /
+      responses:
+        '200':
+          description: Siap melayani
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        JWT HS256 berumur 300 detik dengan klaim iss (laporlh-api),
+        aud (laporlh-mobile), sub, role, sid, jti, iat, dan exp.
+
+  headers:
+    XRequestId:
+      description: ID permintaan; klien boleh mengirim X-Request-ID sendiri.
+      schema:
+        type: string
+    RetryAfter:
+      description: Detik sebelum permintaan boleh diulang.
+      schema:
+        type: integer
+
+  parameters:
+    ReportId:
+      name: id
+      in: path
+      required: true
+      description: UUID yang dibangkitkan di perangkat.
+      schema:
+        type: string
+        format: uuid
+    AttachmentId:
+      name: attachmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Role:
+      type: string
+      enum: [FIELD_OFFICER, REVIEWER]
+
+    User:
+      type: object
+      required: [id, email, full_name, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+
+    LoginRequest:
+      type: object
+      required: [email, password, device_id, device_public_key]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          maxLength: 72
+          description: Maksimal 72 byte sesuai batas bcrypt.
+        device_id:
+          type: string
+          format: uuid
+          description: UUID yang dibuat saat instalasi.
+        device_public_key:
+          type: string
+          description: Kunci publik EC P-256, SPKI DER, base64.
+
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/TokenResponse'
+        - type: object
+          required: [user]
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+
+    TokenResponse:
+      type: object
+      required: [token_type, access_token, expires_in, device_expires_in]
+      properties:
+        token_type:
+          type: string
+          enum: [Bearer]
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+          example: 300
+        device_expires_in:
+          type: integer
+          description: Sisa masa berlaku pendaftaran perangkat, dalam detik.
+          example: 2592000
+
+    ChallengeRequest:
+      type: object
+      required: [device_id]
+      properties:
+        device_id:
+          type: string
+          format: uuid
+
+    ChallengeResponse:
+      type: object
+      required: [nonce, expires_in]
+      properties:
+        nonce:
+          type: string
+          description: 256 bit, base64url.
+        expires_in:
+          type: integer
+          example: 60
+
+    RefreshRequest:
+      type: object
+      required: [device_id, nonce, signature]
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        nonce:
+          type: string
+        signature:
+          type: string
+          description: ECDSA P-256 SHA-256, DER, base64url.
+
+    ReportStatus:
+      type: string
+      description: Status di server.
+      enum: [UPLOADING, SUBMITTED, VERIFIED, REJECTED]
+
+    Category:
+      type: string
+      enum:
+        - REHABILITASI_HUTAN_LAHAN
+        - MANGROVE_PESISIR
+        - PENGELOLAAN_SAMPAH
+        - ENERGI_TERBARUKAN
+        - PEMBERDAYAAN_MASYARAKAT
+        - LAINNYA
+
+    AttachmentKind:
+      type: string
+      description: >-
+        PHOTO dari kamera, IMAGE dari galeri, DOCUMENT untuk PDF, DOCX, XLSX,
+        dan FILE untuk TXT, CSV.
+      enum: [PHOTO, IMAGE, DOCUMENT, FILE]
+
+    AttachmentState:
+      type: string
+      enum: [EXPECTED, UPLOADED]
+
+    Location:
+      type: object
+      required: [latitude, longitude, accuracy_m, captured_at, is_mock]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        accuracy_m:
+          type: number
+          minimum: 0
+        captured_at:
+          type: string
+          format: date-time
+        is_mock:
+          type: boolean
+
+    AttachmentManifestItem:
+      type: object
+      required: [id, kind, file_name, mime_type, size_bytes, sha256]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/AttachmentKind'
+        file_name:
+          type: string
+          description: Hanya metadata; tidak pernah menjadi jalur penyimpanan.
+        mime_type:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+            - application/pdf
+            - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+            - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            - text/plain
+            - text/csv
+        size_bytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        sha256:
+          type: string
+          pattern: '^[0-9a-fA-F]{64}$'
+
+    ReportInput:
+      type: object
+      required:
+        - title
+        - description
+        - category
+        - activity_date
+        - location
+        - client_created_at
+        - attachments
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 120
+        description:
+          type: string
+          minLength: 20
+          maxLength: 2000
+        category:
+          $ref: '#/components/schemas/Category'
+        activity_date:
+          type: string
+          format: date
+          description: Tidak melebihi hari ini dan tidak lebih dari 90 hari ke belakang.
+        location:
+          $ref: '#/components/schemas/Location'
+        client_created_at:
+          type: string
+          format: date-time
+        attachments:
+          type: array
+          minItems: 1
+          maxItems: 10
+          description: >-
+            Manifes. Wajib memuat minimal satu lampiran berjenis PHOTO atau
+            IMAGE, dengan total ukuran maksimal 30 MB. Pelanggaran dijawab
+            400 VALIDATION_ERROR.
+          items:
+            $ref: '#/components/schemas/AttachmentManifestItem'
+
+    AttachmentRef:
+      type: object
+      required: [id, state]
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/AttachmentState'
+
+    ReportReceipt:
+      type: object
+      required: [id, status, version, attachments, created_at, updated_at, server_time]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        version:
+          type: integer
+          minimum: 1
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttachmentRef'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        server_time:
+          type: string
+          format: date-time
+
+    AttachmentReceipt:
+      type: object
+      required: [id, state, report_status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/AttachmentState'
+        report_status:
+          $ref: '#/components/schemas/ReportStatus'
+
+    ReportSummary:
+      type: object
+      required:
+        - id
+        - title
+        - category
+        - activity_date
+        - status
+        - version
+        - attachment_count
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+        activity_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        review_note:
+          type: string
+          nullable: true
+        version:
+          type: integer
+        attachment_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+
+    ReportList:
+      type: object
+      required: [items, next_cursor, server_time]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportSummary'
+        next_cursor:
+          type: string
+          nullable: true
+        server_time:
+          type: string
+          format: date-time
+
+    AttachmentDetail:
+      allOf:
+        - $ref: '#/components/schemas/AttachmentManifestItem'
+        - type: object
+          required: [state]
+          properties:
+            state:
+              $ref: '#/components/schemas/AttachmentState'
+
+    ReportDetail:
+      allOf:
+        - $ref: '#/components/schemas/ReportSummary'
+        - type: object
+          required: [description, location, client_created_at, attachments, created_at]
+          properties:
+            description:
+              type: string
+            location:
+              $ref: '#/components/schemas/Location'
+            client_created_at:
+              type: string
+              format: date-time
+            created_at:
+              type: string
+              format: date-time
+            attachments:
+              type: array
+              items:
+                $ref: '#/components/schemas/AttachmentDetail'
+
+    ReviewRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [VERIFIED, REJECTED]
+        note:
+          type: string
+          minLength: 5
+          maxLength: 500
+
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+
+    ErrorCode:
+      type: string
+      enum:
+        - VALIDATION_ERROR
+        - UNAUTHENTICATED
+        - TOKEN_EXPIRED
+        - TOKEN_INVALID
+        - INVALID_CREDENTIALS
+        - DEVICE_KEY_INVALID
+        - NONCE_INVALID
+        - FORBIDDEN
+        - NOT_FOUND
+        - REPORT_NOT_FOUND
+        - ATTACHMENT_NOT_FOUND
+        - REPORT_LOCKED
+        - INVALID_STATE
+        - PAYLOAD_TOO_LARGE
+        - UNSUPPORTED_MEDIA_TYPE
+        - CHECKSUM_MISMATCH
+        - RATE_LIMITED
+        - INTERNAL_ERROR
+        - SERVICE_UNAVAILABLE
+
+    ErrorDetail:
+      type: object
+      required: [field, issue, message]
+      properties:
+        field:
+          type: string
+        issue:
+          type: string
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                $ref: '#/components/schemas/ErrorDetail'
+            request_id:
+              type: string
+
+  responses:
+    ValidationError:
+      description: Isian atau parameter tidak valid. Gagal permanen.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: >-
+        UNAUTHENTICATED, TOKEN_EXPIRED, atau TOKEN_INVALID. Klien memperbarui
+        token lalu mengulang satu kali.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InvalidCredentials:
+      description: INVALID_CREDENTIALS. Surel atau kata sandi salah.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RefreshUnauthorized:
+      description: >-
+        NONCE_INVALID (nonce tidak dikenal, kedaluwarsa, atau sudah dipakai;
+        minta nonce baru dan ulang satu kali) atau DEVICE_KEY_INVALID
+        (perangkat tidak dikenal, kunci dicabut atau kedaluwarsa, atau tanda
+        tangan salah; sesi perlu login ulang).
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: FORBIDDEN. Peran tidak diizinkan. Gagal permanen.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: >-
+        NOT_FOUND, REPORT_NOT_FOUND, atau ATTACHMENT_NOT_FOUND. Sumber daya
+        tidak ada atau bukan milik pengguna.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: >-
+        REPORT_LOCKED atau INVALID_STATE. Perubahan tidak diizinkan pada status
+        saat ini.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PayloadTooLarge:
+      description: PAYLOAD_TOO_LARGE. Berkas melebihi batas.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnsupportedMediaType:
+      description: UNSUPPORTED_MEDIA_TYPE. Tipe berkas tidak diizinkan atau tidak cocok.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ChecksumMismatch:
+      description: CHECKSUM_MISMATCH. Hash isi tidak sama dengan manifes.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimited:
+      description: RATE_LIMITED. Coba ulang setelah Retry-After.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: INTERNAL_ERROR. Coba ulang dengan backoff.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: SERVICE_UNAVAILABLE. Server belum siap. Coba ulang dengan backoff.
+      headers:
+        X-Request-ID:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
