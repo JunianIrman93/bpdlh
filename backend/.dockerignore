@@ -1,0 +1,8 @@
+node_modules
+dist
+.adminjs
+.data
+.env
+test
+*.log
+admin-bundle

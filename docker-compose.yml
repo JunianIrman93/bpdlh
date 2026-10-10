@@ -1,0 +1,39 @@
+name: laporlh
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: laporlh
+      POSTGRES_PASSWORD: laporlh
+      POSTGRES_DB: laporlh
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laporlh -d laporlh"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://laporlh:laporlh@postgres:5432/laporlh
+      STORAGE_DRIVER: disk
+      STORAGE_DISK_PATH: /data/files
+    ports:
+      - "8080:8080"
+    volumes:
+      - files:/data/files
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  files:
