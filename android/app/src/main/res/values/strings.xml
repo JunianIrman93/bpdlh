@@ -118,6 +118,11 @@
     <string name="detail_retry">Coba ulang</string>
     <string name="detail_edit">Ubah</string>
     <string name="detail_no_map_app">Tidak ada aplikasi peta di perangkat ini.</string>
+    <string name="detail_server_title">Isi laporan</string>
+    <string name="detail_server_loading">Memuat isi laporan dari server…</string>
+    <string name="detail_server_offline">Isi laporan ini tersimpan di server. Sambungkan ke internet untuk melihatnya.</string>
+    <string name="detail_server_failed">Isi laporan belum dapat dimuat. Coba lagi beberapa saat lagi.</string>
+    <string name="detail_server_reload">Muat ulang</string>
 
     <string name="account_title">Akun</string>
     <string name="account_section_profile">Profil</string>

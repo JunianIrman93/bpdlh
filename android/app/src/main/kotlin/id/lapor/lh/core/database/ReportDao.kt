@@ -164,4 +164,29 @@ interface ReportDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertReportIfAbsent(report: ReportEntity)
+
+    @Query(
+        """
+        UPDATE reports SET description = :description, latitude = :latitude, longitude = :longitude,
+            accuracy_m = :accuracyM, location_captured_at = :locationCapturedAt, is_mock_location = :isMockLocation,
+            server_status = :serverStatus, review_note = :reviewNote, server_version = :serverVersion,
+            client_created_at = :clientCreatedAt, updated_at = MAX(updated_at, :updatedAt)
+        WHERE id = :id AND owner_id = :ownerId AND sync_state = 'SYNCED' AND latitude IS NULL
+        """,
+    )
+    suspend fun applyServerDetail(
+        id: String,
+        ownerId: String,
+        description: String,
+        latitude: Double,
+        longitude: Double,
+        accuracyM: Float,
+        locationCapturedAt: Long,
+        isMockLocation: Boolean,
+        serverStatus: String,
+        reviewNote: String?,
+        serverVersion: Int,
+        clientCreatedAt: Long,
+        updatedAt: Long,
+    ): Int
 }

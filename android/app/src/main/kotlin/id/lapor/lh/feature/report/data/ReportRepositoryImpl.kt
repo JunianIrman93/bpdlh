@@ -7,10 +7,17 @@ import id.lapor.lh.core.database.AttachmentEntity
 import id.lapor.lh.core.database.ReportEntity
 import id.lapor.lh.core.files.AttachmentStorage
 import id.lapor.lh.core.files.StoredFile
+import id.lapor.lh.core.network.ApiException
+import id.lapor.lh.core.network.ReportApi
+import id.lapor.lh.core.network.apiCall
+import id.lapor.lh.core.network.dto.AttachmentDetailDto
+import id.lapor.lh.core.network.dto.ReportDetailDto
+import id.lapor.lh.feature.auth.data.TokenRefresher
 import id.lapor.lh.feature.auth.domain.AuthRepository
 import id.lapor.lh.feature.report.domain.AddAttachmentResult
 import id.lapor.lh.feature.report.domain.AttachmentError
 import id.lapor.lh.feature.report.domain.AttachmentKind
+import id.lapor.lh.feature.report.domain.DetailLoadResult
 import id.lapor.lh.feature.report.domain.Report
 import id.lapor.lh.feature.report.domain.ReportDraft
 import id.lapor.lh.feature.report.domain.ReportError
@@ -27,7 +34,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -44,7 +54,16 @@ private val extensionByMime =
         "text/csv" to "csv",
     )
 
+private val imageExtensionByMime =
+    mapOf(
+        "image/jpeg" to "jpg",
+        "image/png" to "png",
+        "image/webp" to "webp",
+    )
+
 private const val MAX_FILE_NAME = 255
+private const val UPLOADED = "UPLOADED"
+private const val NETWORK_ERROR = "NETWORK_ERROR"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReportRepositoryImpl
@@ -54,8 +73,12 @@ class ReportRepositoryImpl
         private val storage: AttachmentStorage,
         private val authRepository: AuthRepository,
         private val syncRepository: SyncRepository,
+        private val reportApi: ReportApi,
+        private val tokenRefresher: TokenRefresher,
+        private val json: Json,
     ) : ReportRepository {
         private val dao = database.reportDao()
+        private val detailMutex = Mutex()
 
         override fun observeReports(): Flow<List<Report>> =
             authRepository.observeCurrentUser().flatMapLatest { user ->
@@ -75,6 +98,47 @@ class ReportRepositoryImpl
             val ownerId = ownerId() ?: return null
             return dao.getReport(id, ownerId)?.toDomain()
         }
+
+        override suspend fun loadServerDetail(id: String): DetailLoadResult =
+            detailMutex.withLock {
+                val ownerId = ownerId() ?: return@withLock DetailLoadResult.FAILED
+                val current = dao.getReport(id, ownerId)?.toDomain() ?: return@withLock DetailLoadResult.FAILED
+                if (!current.isSummaryOnly) return@withLock DetailLoadResult.LOADED
+                val fetched = mutableListOf<String>()
+                var saved = false
+                try {
+                    tokenRefresher.ensureFresh()
+                    val detail = apiCall(json) { reportApi.get(id) }
+                    if (detail.attachments.any { it.state != UPLOADED }) return@withLock DetailLoadResult.FAILED
+                    val clientCreatedAt = Instant.parse(detail.clientCreatedAt).toEpochMilli()
+                    val attachments =
+                        detail.attachments.mapIndexed { index, item ->
+                            val path =
+                                if (item.kind == AttachmentKind.PHOTO.name || item.kind == AttachmentKind.IMAGE.name) {
+                                    fetched += item.id
+                                    downloadImage(id, item)
+                                } else {
+                                    ""
+                                }
+                            item.toEntity(id, path, clientCreatedAt + index)
+                        }
+                    saved =
+                        database.withTransaction {
+                            val updated = applyDetail(id, ownerId, detail, clientCreatedAt) == 1
+                            if (updated) attachments.forEach { dao.insertAttachment(it) }
+                            updated
+                        }
+                    if (saved) DetailLoadResult.LOADED else DetailLoadResult.FAILED
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: ApiException) {
+                    if (e.code == NETWORK_ERROR) DetailLoadResult.NETWORK_ERROR else DetailLoadResult.FAILED
+                } catch (e: Exception) {
+                    DetailLoadResult.FAILED
+                } finally {
+                    if (!saved) fetched.forEach { storage.deleteAttachmentFiles(id, it) }
+                }
+            }
 
         override suspend fun saveDraft(draft: ReportDraft) {
             val ownerId = ownerId() ?: return
@@ -234,6 +298,45 @@ class ReportRepositoryImpl
 
         private suspend fun ownerId(): String? = authRepository.observeCurrentUser().first()?.id
 
+        private suspend fun applyDetail(
+            id: String,
+            ownerId: String,
+            detail: ReportDetailDto,
+            clientCreatedAt: Long,
+        ): Int =
+            dao.applyServerDetail(
+                id = id,
+                ownerId = ownerId,
+                description = detail.description,
+                latitude = detail.location.latitude,
+                longitude = detail.location.longitude,
+                accuracyM = detail.location.accuracyM,
+                locationCapturedAt = Instant.parse(detail.location.capturedAt).toEpochMilli(),
+                isMockLocation = detail.location.isMock,
+                serverStatus = detail.status,
+                reviewNote = detail.reviewNote,
+                serverVersion = detail.version,
+                clientCreatedAt = clientCreatedAt,
+                updatedAt = Instant.parse(detail.updatedAt).toEpochMilli(),
+            )
+
+        private suspend fun downloadImage(
+            reportId: String,
+            item: AttachmentDetailDto,
+        ): String {
+            val extension = imageExtensionByMime[item.mimeType] ?: throw ApiException("UNSUPPORTED_MEDIA_TYPE", "unexpected image type")
+            val stored =
+                apiCall(json) {
+                    reportApi.downloadAttachment(reportId, item.id).use { body ->
+                        storage.storeStream(body.byteStream(), reportId, item.id, extension, ReportRules.MAX_FILE_BYTES)
+                    }
+                }
+            if (stored == null || stored.sizeBytes != item.sizeBytes || !stored.sha256.equals(item.sha256, ignoreCase = true)) {
+                throw ApiException("CHECKSUM_MISMATCH", "downloaded file does not match")
+            }
+            return stored.path
+        }
+
         private suspend fun import(
             source: Uri,
             kind: AttachmentKind,
@@ -287,6 +390,23 @@ private sealed interface Imported {
         val error: AttachmentError,
     ) : Imported
 }
+
+private fun AttachmentDetailDto.toEntity(
+    reportId: String,
+    localPath: String,
+    createdAt: Long,
+) = AttachmentEntity(
+    id = id,
+    reportId = reportId,
+    kind = kind,
+    fileName = fileName,
+    mimeType = mimeType,
+    sizeBytes = sizeBytes,
+    sha256 = sha256,
+    localPath = localPath,
+    uploadState = UPLOADED,
+    createdAt = createdAt,
+)
 
 private fun ReportDraft.toNewEntity(
     ownerId: String,

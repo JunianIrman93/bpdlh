@@ -107,20 +107,29 @@ class AttachmentStorage
             maxBytes: Long,
         ): StoredFile? =
             withContext(Dispatchers.IO) {
+                open(source).use { storeStream(it, reportId, attachmentId, extension, maxBytes) }
+            }
+
+        suspend fun storeStream(
+            input: InputStream,
+            reportId: String,
+            attachmentId: String,
+            extension: String,
+            maxBytes: Long,
+        ): StoredFile? =
+            withContext(Dispatchers.IO) {
                 val target = targetFile(reportId, attachmentId, extension)
                 val digest = MessageDigest.getInstance("SHA-256")
                 var total = 0L
-                open(source).use { input ->
-                    target.outputStream().use { out ->
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            total += read
-                            if (total > maxBytes) break
-                            digest.update(buffer, 0, read)
-                            out.write(buffer, 0, read)
-                        }
+                target.outputStream().use { out ->
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        total += read
+                        if (total > maxBytes) break
+                        digest.update(buffer, 0, read)
+                        out.write(buffer, 0, read)
                     }
                 }
                 if (total > maxBytes) {

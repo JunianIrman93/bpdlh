@@ -12,12 +12,20 @@ sealed interface AddAttachmentResult {
     data object Failed : AddAttachmentResult
 }
 
+enum class DetailLoadResult {
+    LOADED,
+    NETWORK_ERROR,
+    FAILED,
+}
+
 interface ReportRepository {
     fun observeReports(): Flow<List<Report>>
 
     fun observeReport(id: String): Flow<Report?>
 
     suspend fun getReport(id: String): Report?
+
+    suspend fun loadServerDetail(id: String): DetailLoadResult
 
     suspend fun saveDraft(draft: ReportDraft)
 

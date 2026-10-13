@@ -249,7 +249,7 @@ private fun ReportCard(
                 listOfNotNull(
                     draft.category?.let { stringResource(it.labelRes()) },
                     draft.activityDate?.display(),
-                    stringResource(R.string.reports_attachment_count, report.attachments.size),
+                    if (report.isSummaryOnly) null else stringResource(R.string.reports_attachment_count, report.attachments.size),
                 )
             Text(
                 text = details.joinToString("  ·  "),

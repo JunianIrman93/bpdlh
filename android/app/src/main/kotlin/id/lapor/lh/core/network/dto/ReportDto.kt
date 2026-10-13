@@ -72,3 +72,27 @@ data class ReportSummaryDto(
     val version: Int,
     @SerialName("updated_at") val updatedAt: String,
 )
+
+@Serializable
+data class ReportDetailDto(
+    val id: String,
+    val status: String,
+    @SerialName("review_note") val reviewNote: String? = null,
+    val version: Int,
+    val description: String,
+    val location: LocationDto,
+    @SerialName("client_created_at") val clientCreatedAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    val attachments: List<AttachmentDetailDto>,
+)
+
+@Serializable
+data class AttachmentDetailDto(
+    val id: String,
+    val kind: String,
+    @SerialName("file_name") val fileName: String,
+    @SerialName("mime_type") val mimeType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    val sha256: String,
+    val state: String,
+)

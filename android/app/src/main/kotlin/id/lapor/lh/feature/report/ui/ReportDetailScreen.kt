@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,8 +54,11 @@ fun ReportDetailRoute(
     viewModel: ReportDetailViewModel = hiltViewModel(),
 ) {
     val report by viewModel.report.collectAsStateWithLifecycle()
+    val detailLoad by viewModel.detailLoad.collectAsStateWithLifecycle()
     ReportDetailScreen(
         report = report,
+        detailLoad = detailLoad,
+        onReloadDetail = viewModel::loadDetail,
         onBack = onBack,
         onCancelQueued = viewModel::cancelQueued,
         onRetry = viewModel::retry,
@@ -65,6 +70,8 @@ fun ReportDetailRoute(
 @Composable
 private fun ReportDetailScreen(
     report: Report?,
+    detailLoad: DetailLoadState,
+    onReloadDetail: () -> Unit,
     onBack: () -> Unit,
     onCancelQueued: () -> Unit,
     onRetry: () -> Unit,
@@ -142,18 +149,45 @@ private fun ReportDetailScreen(
                 ) { Text(report.reviewNote) }
             }
 
-            LocationCard(report = report, snackbar = snackbar)
+            if (report.isSummaryOnly) {
+                ServerDetailCard(state = detailLoad, onReload = onReloadDetail)
+            } else {
+                LocationCard(report = report, snackbar = snackbar)
 
-            SectionCard(title = stringResource(R.string.form_section_attachments), isError = false) {
-                if (report.attachments.isEmpty()) {
-                    Notice(stringResource(R.string.detail_no_attachments), isError = false)
-                } else {
-                    report.attachments.forEach { AttachmentRow(attachment = it, onRemove = null) }
+                SectionCard(title = stringResource(R.string.form_section_attachments), isError = false) {
+                    if (report.attachments.isEmpty()) {
+                        Notice(stringResource(R.string.detail_no_attachments), isError = false)
+                    } else {
+                        report.attachments.forEach { AttachmentRow(attachment = it, onRemove = null) }
+                    }
                 }
             }
 
             Actions(report = report, onCancelQueued = onCancelQueued, onRetry = onRetry, onEdit = onEdit)
             Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun ServerDetailCard(
+    state: DetailLoadState,
+    onReload: () -> Unit,
+) {
+    SectionCard(title = stringResource(R.string.detail_server_title), isError = false) {
+        if (state == DetailLoadState.LOADING || state == DetailLoadState.IDLE) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Notice(stringResource(R.string.detail_server_loading), isError = false)
+            }
+        } else {
+            val message =
+                if (state == DetailLoadState.NETWORK_ERROR) R.string.detail_server_offline else R.string.detail_server_failed
+            Notice(stringResource(message), isError = false)
+            OutlinedButton(onClick = onReload, modifier = Modifier.height(48.dp)) {
+                Text(stringResource(R.string.detail_server_reload))
+            }
         }
     }
 }

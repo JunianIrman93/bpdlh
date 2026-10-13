@@ -92,6 +92,8 @@ data class Report(
 
     val uploadedCount: Int get() = attachments.count { it.isUploaded }
 
+    val isSummaryOnly: Boolean get() = syncState == SyncState.SYNCED && draft.location == null
+
     val status: ReportStatus
         get() =
             when (syncState) {
