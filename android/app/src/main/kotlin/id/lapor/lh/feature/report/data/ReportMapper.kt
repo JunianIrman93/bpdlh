@@ -5,6 +5,7 @@ import id.lapor.lh.core.database.ReportWithAttachments
 import id.lapor.lh.feature.report.domain.Attachment
 import id.lapor.lh.feature.report.domain.AttachmentKind
 import id.lapor.lh.feature.report.domain.Category
+import id.lapor.lh.feature.report.domain.FailureReason
 import id.lapor.lh.feature.report.domain.Report
 import id.lapor.lh.feature.report.domain.ReportDraft
 import id.lapor.lh.feature.report.domain.ReportLocation
@@ -41,7 +42,7 @@ internal fun ReportWithAttachments.toDomain(): Report {
         syncState = SyncState.valueOf(report.syncState),
         serverStatus = report.serverStatus?.let(ServerStatus::valueOf),
         reviewNote = report.reviewNote,
-        lastError = report.lastError,
+        failure = report.lastError?.let(::failureReason),
         updatedAt = report.updatedAt,
     )
 }
@@ -54,4 +55,25 @@ private fun AttachmentEntity.toDomain() =
         mimeType = mimeType,
         sizeBytes = sizeBytes,
         localPath = localPath,
+        isUploaded = uploadState == "UPLOADED",
     )
+
+private fun failureReason(code: String): FailureReason =
+    when (code) {
+        "NETWORK_ERROR" -> FailureReason.NETWORK
+
+        "VALIDATION_ERROR" -> FailureReason.INVALID_CONTENT
+
+        "REPORT_LOCKED", "INVALID_STATE" -> FailureReason.LOCKED
+
+        "PAYLOAD_TOO_LARGE",
+        "UNSUPPORTED_MEDIA_TYPE",
+        "CHECKSUM_MISMATCH",
+        "ATTACHMENT_NOT_FOUND",
+        "FILE_MISSING",
+        -> FailureReason.ATTACHMENT
+
+        "FORBIDDEN", "NOT_FOUND", "REPORT_NOT_FOUND" -> FailureReason.NOT_ALLOWED
+
+        else -> FailureReason.SERVER
+    }

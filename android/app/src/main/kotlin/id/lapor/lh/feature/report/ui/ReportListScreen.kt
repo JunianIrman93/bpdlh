@@ -10,27 +10,37 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,6 +60,7 @@ fun ReportListRoute(
     ReportListScreen(
         uiState = uiState,
         onFilterChange = viewModel::onFilterChange,
+        onRefresh = viewModel::refresh,
         onCreateReport = onCreateReport,
         onOpenReport = onOpenReport,
     )
@@ -60,6 +71,7 @@ fun ReportListRoute(
 private fun ReportListScreen(
     uiState: ReportListUiState,
     onFilterChange: (ReportStatus?) -> Unit,
+    onRefresh: () -> Unit,
     onCreateReport: () -> Unit,
     onOpenReport: (Report) -> Unit,
 ) {
@@ -91,33 +103,88 @@ private fun ReportListScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            SyncBanner(uiState = uiState, onSyncNow = onRefresh)
             if (uiState.hasAnyReport) {
                 FilterRow(selected = uiState.filter, onFilterChange = onFilterChange)
             }
-            when {
-                !uiState.isLoaded -> {
-                    Unit
-                }
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    !uiState.isLoaded -> {
+                        Unit
+                    }
 
-                uiState.reports.isEmpty() -> {
-                    EmptyState(
-                        text =
-                            stringResource(
-                                if (uiState.hasAnyReport) R.string.reports_empty_filtered else R.string.reports_empty,
-                            ),
-                    )
-                }
+                    uiState.reports.isEmpty() -> {
+                        EmptyState(
+                            text =
+                                stringResource(
+                                    if (uiState.hasAnyReport) R.string.reports_empty_filtered else R.string.reports_empty,
+                                ),
+                        )
+                    }
 
-                else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(uiState.reports, key = { it.id }) { report ->
-                            ReportCard(report = report, onClick = { onOpenReport(report) })
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(uiState.reports, key = { it.id }) { report ->
+                                ReportCard(report = report, onClick = { onOpenReport(report) })
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncBanner(
+    uiState: ReportListUiState,
+    onSyncNow: () -> Unit,
+) {
+    val offline = !uiState.isOnline
+    val pending = uiState.pendingCount
+    val message =
+        when {
+            offline && pending > 0 -> stringResource(R.string.sync_offline_pending, pending)
+            offline -> stringResource(R.string.sync_offline)
+            uiState.isSyncing -> stringResource(R.string.sync_in_progress)
+            pending > 0 -> stringResource(R.string.sync_pending, pending)
+            else -> return
+        }
+    val showSyncNow = !offline && !uiState.isSyncing && !uiState.isRefreshing
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        color = if (offline) colors.surfaceVariant else colors.secondaryContainer,
+        contentColor = if (offline) colors.onSurfaceVariant else colors.onSecondaryContainer,
+        shape = MaterialTheme.shapes.small,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.heightIn(min = 48.dp).padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+        ) {
+            if (uiState.isSyncing && !offline) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = LocalContentColor.current,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Text(text = message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            if (showSyncNow) {
+                TextButton(onClick = onSyncNow) { Text(stringResource(R.string.sync_now)) }
             }
         }
     }
@@ -180,18 +247,26 @@ private fun ReportCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (report.status == ReportStatus.SYNCING) {
+                Spacer(modifier = Modifier.height(12.dp))
+                UploadProgress(report = report)
+            }
         }
     }
 }
 
 @Composable
 private fun EmptyState(text: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            Box(modifier = Modifier.fillParentMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }

@@ -18,7 +18,7 @@ import id.lapor.lh.feature.report.domain.ReportField
 import id.lapor.lh.feature.report.domain.ReportRepository
 import id.lapor.lh.feature.report.domain.ReportRules
 import id.lapor.lh.feature.report.domain.SyncState
-import id.lapor.lh.feature.sync.domain.SyncScheduler
+import id.lapor.lh.feature.sync.domain.SyncRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +51,7 @@ class ReportRepositoryImpl
         private val database: AppDatabase,
         private val storage: AttachmentStorage,
         private val authRepository: AuthRepository,
-        private val syncScheduler: SyncScheduler,
+        private val syncRepository: SyncRepository,
     ) : ReportRepository {
         private val dao = database.reportDao()
 
@@ -196,7 +196,7 @@ class ReportRepositoryImpl
                         errors
                     }
                 }
-            if (errors.isEmpty()) syncScheduler.requestSync()
+            if (errors.isEmpty()) syncRepository.requestSync()
             return errors
         }
 
@@ -204,7 +204,7 @@ class ReportRepositoryImpl
 
         override suspend fun retryFailed(id: String) {
             transition(id, SyncState.FAILED, SyncState.QUEUED)
-            syncScheduler.requestSync()
+            syncRepository.requestSync()
         }
 
         override suspend fun editFailed(id: String) = transition(id, SyncState.FAILED, SyncState.DRAFT)

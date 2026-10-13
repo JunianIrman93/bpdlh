@@ -42,6 +42,12 @@
     <string name="reports_empty_filtered">Tidak ada laporan dengan status ini.</string>
     <string name="reports_untitled">Tanpa judul</string>
     <string name="reports_attachment_count">%1$d lampiran</string>
+    <string name="sync_offline">Tidak ada jaringan. Laporan tetap tersimpan di ponsel.</string>
+    <string name="sync_offline_pending">Tidak ada jaringan. %1$d laporan akan dikirim otomatis saat tersambung.</string>
+    <string name="sync_in_progress">Menyinkronkan laporan…</string>
+    <string name="sync_pending">%1$d laporan menunggu dikirim.</string>
+    <string name="sync_now">Sinkronkan sekarang</string>
+    <string name="sync_attachment_progress">Mengunggah lampiran %1$d dari %2$d</string>
 
     <string name="form_title_new">Laporan baru</string>
     <string name="form_title_edit">Ubah draf</string>
@@ -101,6 +107,13 @@
     <string name="detail_no_attachments">Belum ada lampiran</string>
     <string name="detail_review_note">Catatan verifikator</string>
     <string name="detail_last_error">Alasan gagal</string>
+    <string name="detail_retry_pending">Percobaan pengiriman terakhir belum berhasil. Aplikasi akan mencoba lagi otomatis.</string>
+    <string name="failure_network">Koneksi terputus saat mengirim. Pastikan ada sinyal, lalu tekan Coba ulang.</string>
+    <string name="failure_server">Server sedang bermasalah. Tekan Coba ulang beberapa saat lagi.</string>
+    <string name="failure_invalid_content">Server menolak isi laporan karena tidak sesuai aturan. Tekan Ubah, perbaiki isinya, lalu kirim lagi.</string>
+    <string name="failure_locked">Laporan ini sudah tercatat di server dan tidak dapat diubah lagi.</string>
+    <string name="failure_attachment">Ada lampiran yang hilang, rusak, atau tidak diterima server. Tekan Ubah, ganti lampirannya, lalu kirim lagi.</string>
+    <string name="failure_not_allowed">Akun ini tidak diizinkan mengirim laporan tersebut. Hubungi admin.</string>
     <string name="detail_cancel_queue">Batalkan pengiriman</string>
     <string name="detail_retry">Coba ulang</string>
     <string name="detail_edit">Ubah</string>

@@ -2,16 +2,16 @@ package id.lapor.lh
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
-import id.lapor.lh.feature.sync.domain.SyncScheduler
+import id.lapor.lh.feature.sync.domain.SyncRepository
 import javax.inject.Inject
 
 @HiltAndroidApp
 class LaporLhApplication : Application() {
     @Inject
-    lateinit var syncScheduler: SyncScheduler
+    lateinit var syncRepository: SyncRepository
 
     override fun onCreate() {
         super.onCreate()
-        syncScheduler.schedulePeriodicSync()
+        syncRepository.schedulePeriodicSync()
     }
 }

@@ -43,6 +43,15 @@ enum class ReportStatus {
     REJECTED,
 }
 
+enum class FailureReason {
+    NETWORK,
+    SERVER,
+    INVALID_CONTENT,
+    LOCKED,
+    ATTACHMENT,
+    NOT_ALLOWED,
+}
+
 data class ReportLocation(
     val latitude: Double,
     val longitude: Double,
@@ -58,6 +67,7 @@ data class Attachment(
     val mimeType: String,
     val sizeBytes: Long,
     val localPath: String,
+    val isUploaded: Boolean,
 )
 
 data class ReportDraft(
@@ -75,10 +85,12 @@ data class Report(
     val syncState: SyncState,
     val serverStatus: ServerStatus?,
     val reviewNote: String?,
-    val lastError: String?,
+    val failure: FailureReason?,
     val updatedAt: Long,
 ) {
     val id: String get() = draft.id
+
+    val uploadedCount: Int get() = attachments.count { it.isUploaded }
 
     val status: ReportStatus
         get() =

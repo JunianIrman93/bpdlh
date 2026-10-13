@@ -1,6 +1,9 @@
 package id.lapor.lh.feature.sync.data
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -11,22 +14,30 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import id.lapor.lh.feature.sync.domain.SyncScheduler
+import id.lapor.lh.feature.sync.domain.SyncRepository
+import id.lapor.lh.feature.sync.domain.SyncStatus
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-const val SYNC_WORK = "sync"
+private const val SYNC_WORK = "sync"
 private const val PERIODIC_SYNC_WORK = "sync-periodic"
 private const val BACKOFF_SECONDS = 30L
 private const val PERIODIC_HOURS = 6L
 
-class WorkManagerSyncScheduler
+class WorkManagerSyncRepository
     @Inject
     constructor(
         @ApplicationContext context: Context,
-    ) : SyncScheduler {
+    ) : SyncRepository {
         private val workManager = WorkManager.getInstance(context)
+        private val connectivity = context.getSystemService(ConnectivityManager::class.java)
         private val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
         override suspend fun requestSync() {
@@ -55,4 +66,34 @@ class WorkManagerSyncScheduler
                     .build()
             workManager.enqueueUniquePeriodicWork(PERIODIC_SYNC_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
         }
+
+        override fun observeStatus(): Flow<SyncStatus> =
+            combine(observeOnline(), observeRunning(SYNC_WORK), observeRunning(PERIODIC_SYNC_WORK)) { online, sync, periodic ->
+                SyncStatus(isOnline = online, isSyncing = sync || periodic)
+            }.distinctUntilChanged()
+
+        private fun observeRunning(name: String): Flow<Boolean> =
+            workManager.getWorkInfosForUniqueWorkFlow(name).map { infos -> infos.any { it.state == WorkInfo.State.RUNNING } }
+
+        private fun observeOnline(): Flow<Boolean> =
+            callbackFlow {
+                val callback =
+                    object : ConnectivityManager.NetworkCallback() {
+                        override fun onCapabilitiesChanged(
+                            network: Network,
+                            capabilities: NetworkCapabilities,
+                        ) {
+                            trySend(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+                        }
+
+                        override fun onLost(network: Network) {
+                            trySend(false)
+                        }
+                    }
+                trySend(connectivity.activeNetwork?.let(connectivity::getNetworkCapabilities).hasInternet())
+                connectivity.registerDefaultNetworkCallback(callback)
+                awaitClose { connectivity.unregisterNetworkCallback(callback) }
+            }.distinctUntilChanged()
     }
+
+private fun NetworkCapabilities?.hasInternet(): Boolean = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true

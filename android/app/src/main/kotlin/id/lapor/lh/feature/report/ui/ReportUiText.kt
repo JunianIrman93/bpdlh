@@ -1,7 +1,11 @@
 package id.lapor.lh.feature.report.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -12,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import id.lapor.lh.R
 import id.lapor.lh.feature.report.domain.AttachmentError
 import id.lapor.lh.feature.report.domain.Category
+import id.lapor.lh.feature.report.domain.FailureReason
+import id.lapor.lh.feature.report.domain.Report
 import id.lapor.lh.feature.report.domain.ReportError
 import id.lapor.lh.feature.report.domain.ReportRules
 import id.lapor.lh.feature.report.domain.ReportStatus
@@ -74,6 +80,35 @@ fun AttachmentError.messageRes(): Int =
         AttachmentError.FILE_TOO_LARGE -> R.string.form_attachment_too_large
         AttachmentError.TOTAL_TOO_LARGE -> R.string.form_attachment_total_too_large
     }
+
+@StringRes
+fun FailureReason.messageRes(): Int =
+    when (this) {
+        FailureReason.NETWORK -> R.string.failure_network
+        FailureReason.SERVER -> R.string.failure_server
+        FailureReason.INVALID_CONTENT -> R.string.failure_invalid_content
+        FailureReason.LOCKED -> R.string.failure_locked
+        FailureReason.ATTACHMENT -> R.string.failure_attachment
+        FailureReason.NOT_ALLOWED -> R.string.failure_not_allowed
+    }
+
+@Composable
+fun UploadProgress(
+    report: Report,
+    modifier: Modifier = Modifier,
+) {
+    val total = report.attachments.size
+    if (total == 0) return
+    val uploaded = report.uploadedCount
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.sync_attachment_progress, uploaded, total),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        LinearProgressIndicator(progress = { uploaded.toFloat() / total }, modifier = Modifier.fillMaxWidth())
+    }
+}
 
 @Composable
 fun StatusBadge(

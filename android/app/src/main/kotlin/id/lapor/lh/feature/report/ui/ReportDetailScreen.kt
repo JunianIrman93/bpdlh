@@ -117,8 +117,23 @@ private fun ReportDetailScreen(
             }
             if (draft.description.isNotBlank()) Text(draft.description, style = MaterialTheme.typography.bodyLarge)
 
-            if (report.status == ReportStatus.FAILED && report.lastError != null) {
-                SectionCard(title = stringResource(R.string.detail_last_error), isError = true) { Text(report.lastError) }
+            if (report.status == ReportStatus.SYNCING) UploadProgress(report = report)
+            if (report.failure != null) {
+                when (report.status) {
+                    ReportStatus.FAILED -> {
+                        SectionCard(title = stringResource(R.string.detail_last_error), isError = true) {
+                            Text(stringResource(report.failure.messageRes()))
+                        }
+                    }
+
+                    ReportStatus.WAITING_NETWORK -> {
+                        Notice(stringResource(R.string.detail_retry_pending), isError = false)
+                    }
+
+                    else -> {
+                        Unit
+                    }
+                }
             }
             if (report.reviewNote != null) {
                 SectionCard(

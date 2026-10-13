@@ -4,8 +4,8 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import id.lapor.lh.feature.sync.data.WorkManagerSyncScheduler
-import id.lapor.lh.feature.sync.domain.SyncScheduler
+import id.lapor.lh.feature.sync.data.WorkManagerSyncRepository
+import id.lapor.lh.feature.sync.domain.SyncRepository
 import javax.inject.Singleton
 
 @Module
@@ -13,5 +13,5 @@ import javax.inject.Singleton
 abstract class SyncModule {
     @Binds
     @Singleton
-    abstract fun bindSyncScheduler(impl: WorkManagerSyncScheduler): SyncScheduler
+    abstract fun bindSyncRepository(impl: WorkManagerSyncRepository): SyncRepository
 }
