@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import id.lapor.lh.R
 
 @Composable
 fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
@@ -80,13 +82,13 @@ private fun LoginScreen(
                         .padding(24.dp),
             ) {
                 Text(
-                    text = "LaporLH",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Masuk untuk mulai melapor",
+                    text = stringResource(R.string.login_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -94,7 +96,7 @@ private fun LoginScreen(
                 OutlinedTextField(
                     value = uiState.email,
                     onValueChange = onEmailChange,
-                    label = { Text("Surel") },
+                    label = { Text(stringResource(R.string.login_email)) },
                     singleLine = true,
                     enabled = !uiState.isLoading,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
@@ -104,7 +106,7 @@ private fun LoginScreen(
                 OutlinedTextField(
                     value = uiState.password,
                     onValueChange = onPasswordChange,
-                    label = { Text("Kata sandi") },
+                    label = { Text(stringResource(R.string.login_password)) },
                     singleLine = true,
                     enabled = !uiState.isLoading,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -113,17 +115,17 @@ private fun LoginScreen(
                     trailingIcon = {
                         TextButton(onClick = { passwordVisible = !passwordVisible }) {
                             Text(
-                                text = if (passwordVisible) "Sembunyikan" else "Tampilkan",
+                                text = stringResource(if (passwordVisible) R.string.login_hide_password else R.string.login_show_password),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         }
                     },
                     modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
                 )
-                if (uiState.errorMessage != null) {
+                if (uiState.errorRes != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = uiState.errorMessage,
+                        text = stringResource(uiState.errorRes),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -141,7 +143,7 @@ private fun LoginScreen(
                             strokeWidth = 2.dp,
                         )
                     } else {
-                        Text("Masuk")
+                        Text(stringResource(R.string.login_submit))
                     }
                 }
             }
