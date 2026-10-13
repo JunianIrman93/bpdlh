@@ -1,5 +1,4 @@
-import { createReadStream } from 'node:fs';
-import { copyFile, mkdir, rm } from 'node:fs/promises';
+import { copyFile, mkdir, open, rm } from 'node:fs/promises';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
 import type { FileStorage } from './file-storage.js';
@@ -18,7 +17,8 @@ export class DiskStorage implements FileStorage {
   }
 
   async get(key: string): Promise<Readable> {
-    return createReadStream(this.resolve(key));
+    const handle = await open(this.resolve(key));
+    return handle.createReadStream();
   }
 
   async delete(key: string): Promise<void> {

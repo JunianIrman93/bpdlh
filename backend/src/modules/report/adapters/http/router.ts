@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { pipeline } from 'node:stream/promises';
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
@@ -119,7 +120,7 @@ export function reportRouter(deps: {
     res.set('X-Content-Type-Options', 'nosniff');
     res.set('Content-Disposition', contentDisposition(file.fileName));
     res.type('application/octet-stream');
-    file.stream.pipe(res);
+    await pipeline(file.stream, res);
   });
 
   return router;
