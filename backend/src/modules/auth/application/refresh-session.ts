@@ -24,6 +24,7 @@ export function createRefreshSession(deps: {
   tokens: TokenIssuer;
   clock: Clock;
   accessTtlSeconds: number;
+  deviceKeyTtlSeconds: number;
 }): RefreshSession {
   return async (input) => {
     const now = deps.clock.now();
@@ -44,13 +45,13 @@ export function createRefreshSession(deps: {
     const user = await deps.users.findById(key.userId);
     if (!user) throw new AppError('DEVICE_KEY_INVALID', 'Kunci perangkat tidak dikenal, dicabut, atau kedaluwarsa');
 
-    await deps.deviceKeys.touchLastUsed(key.id, now);
+    await deps.deviceKeys.extend(key.id, now, new Date(now.getTime() + deps.deviceKeyTtlSeconds * 1000));
     const accessToken = await deps.tokens.issue({ userId: user.id, role: user.role, sessionId: key.id });
 
     return {
       accessToken,
       expiresIn: deps.accessTtlSeconds,
-      deviceExpiresIn: Math.floor((key.expiresAt.getTime() - now.getTime()) / 1000),
+      deviceExpiresIn: deps.deviceKeyTtlSeconds,
     };
   };
 }

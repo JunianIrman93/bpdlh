@@ -25,7 +25,7 @@ export interface DeviceKeyRepo {
     expiresAt: Date;
   }): Promise<{ id: string }>;
   findByDeviceId(deviceId: string): Promise<DeviceKeyRecord | null>;
-  touchLastUsed(id: string, now: Date): Promise<void>;
+  extend(id: string, now: Date, expiresAt: Date): Promise<void>;
   revoke(id: string, now: Date): Promise<void>;
 }
 

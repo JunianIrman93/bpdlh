@@ -116,6 +116,7 @@ const app = createApp({
         tokens: jwt,
         clock,
         accessTtlSeconds: env.ACCESS_TTL_SECONDS,
+        deviceKeyTtlSeconds: env.DEVICE_KEY_TTL_SECONDS,
       }),
       logout: createLogout({ deviceKeys, clock }),
       getProfile: createGetProfile({ users }),

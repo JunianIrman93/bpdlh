@@ -46,8 +46,8 @@ export class PrismaDeviceKeyRepo implements DeviceKeyRepo {
     return row && toDeviceKeyRecord(row);
   }
 
-  async touchLastUsed(id: string, now: Date): Promise<void> {
-    await this.db.deviceKey.update({ where: { id }, data: { lastUsedAt: now } });
+  async extend(id: string, now: Date, expiresAt: Date): Promise<void> {
+    await this.db.deviceKey.update({ where: { id }, data: { lastUsedAt: now, expiresAt } });
   }
 
   async revoke(id: string, now: Date): Promise<void> {
