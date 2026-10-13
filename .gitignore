@@ -4,6 +4,7 @@ dist/
 *.log
 
 .gradle/
+.kotlin/
 build/
 local.properties
 .idea/
