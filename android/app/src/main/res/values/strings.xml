@@ -2,6 +2,10 @@
 <resources>
     <string name="app_name">LaporLH</string>
 
+    <string name="action_back">Kembali</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_continue">Lanjutkan</string>
+
     <string name="login_subtitle">Masuk untuk mulai melapor</string>
     <string name="login_email">Surel</string>
     <string name="login_password">Kata sandi</string>
@@ -13,4 +17,91 @@
     <string name="login_error_rate_limited">Terlalu banyak percobaan, coba lagi nanti</string>
     <string name="login_error_network">Tidak dapat terhubung ke server. Periksa jaringan Anda.</string>
     <string name="login_error_generic">Gagal masuk, coba lagi</string>
+
+    <string name="status_draft">Draf</string>
+    <string name="status_waiting_network">Menunggu jaringan</string>
+    <string name="status_syncing">Menyinkronkan</string>
+    <string name="status_failed">Gagal</string>
+    <string name="status_sent">Terkirim</string>
+    <string name="status_verified">Diverifikasi</string>
+    <string name="status_rejected">Ditolak</string>
+
+    <string name="category_rehabilitasi_hutan_lahan">Rehabilitasi Hutan dan Lahan</string>
+    <string name="category_mangrove_pesisir">Mangrove dan Pesisir</string>
+    <string name="category_pengelolaan_sampah">Pengelolaan Sampah</string>
+    <string name="category_energi_terbarukan">Energi Terbarukan</string>
+    <string name="category_pemberdayaan_masyarakat">Pemberdayaan Masyarakat</string>
+    <string name="category_lainnya">Lainnya</string>
+
+    <string name="reports_title">Laporan</string>
+    <string name="reports_greeting">Halo, %1$s</string>
+    <string name="reports_new">Buat laporan</string>
+    <string name="reports_filter_all">Semua</string>
+    <string name="reports_empty">Belum ada laporan. Tekan Buat laporan untuk mulai.</string>
+    <string name="reports_empty_filtered">Tidak ada laporan dengan status ini.</string>
+    <string name="reports_untitled">Tanpa judul</string>
+    <string name="reports_attachment_count">%1$d lampiran</string>
+
+    <string name="form_title_new">Laporan baru</string>
+    <string name="form_title_edit">Ubah draf</string>
+    <string name="form_field_title">Judul</string>
+    <string name="form_field_description">Deskripsi</string>
+    <string name="form_field_category">Kategori</string>
+    <string name="form_field_date">Tanggal kegiatan</string>
+    <string name="form_date_dialog_title">Pilih tanggal kegiatan</string>
+    <string name="form_counter">%1$d/%2$d</string>
+    <string name="form_section_location">Lokasi</string>
+    <string name="form_location_capture">Ambil lokasi</string>
+    <string name="form_location_retake">Ambil ulang</string>
+    <string name="form_location_searching">Mencari lokasi</string>
+    <string name="form_location_accuracy">Akurasi %1$d m, diambil %2$s</string>
+    <string name="form_location_mock">Lokasi tiruan terdeteksi. Tetap dicatat pada laporan.</string>
+    <string name="form_location_poor_accuracy">Akurasi lebih dari 100 m. Lokasi tetap bisa dipakai, atau ambil ulang di tempat terbuka.</string>
+    <string name="form_location_timeout">Lokasi belum didapat dalam 20 detik. Coba lagi di tempat terbuka.</string>
+    <string name="form_location_disabled">Layanan lokasi mati. Aktifkan lokasi di pengaturan perangkat.</string>
+    <string name="form_location_denied">Izin lokasi presisi belum diberikan. Draf tetap bisa disimpan, tetapi lokasi wajib untuk mengirim.</string>
+    <string name="form_location_rationale_title">Izin lokasi</string>
+    <string name="form_location_rationale_text">Lokasi dipakai untuk mencatat tempat kegiatan pada laporan. Lokasi hanya diambil saat Anda menekan Ambil lokasi, tidak dilacak di latar belakang.</string>
+    <string name="form_open_settings">Buka pengaturan</string>
+    <string name="form_section_attachments">Lampiran</string>
+    <string name="form_attachment_summary">%1$d dari %2$d lampiran, %3$s dari 30 MB</string>
+    <string name="form_attach_photo">Kamera</string>
+    <string name="form_attach_image">Galeri</string>
+    <string name="form_attach_document">Dokumen</string>
+    <string name="form_attach_file">Berkas</string>
+    <string name="form_attachment_saving">Menyimpan lampiran</string>
+    <string name="form_attachment_remove">Hapus</string>
+    <string name="form_attachment_remove_description">Hapus lampiran %1$s</string>
+    <string name="form_attachment_too_many">Maksimal 10 lampiran per laporan.</string>
+    <string name="form_attachment_unsupported">Tipe berkas tidak didukung. Dokumen: PDF, DOCX, XLSX. Berkas: TXT, CSV.</string>
+    <string name="form_attachment_too_large">Ukuran berkas maksimal 10 MB.</string>
+    <string name="form_attachment_total_too_large">Total ukuran lampiran maksimal 30 MB.</string>
+    <string name="form_attachment_failed">Lampiran gagal disimpan. Coba lagi.</string>
+    <string name="form_save_draft">Simpan draf</string>
+    <string name="form_submit">Kirim</string>
+    <string name="form_delete_draft">Hapus draf</string>
+    <string name="form_draft_saved">Draf tersimpan</string>
+    <string name="form_fix_errors">Periksa isian yang ditandai.</string>
+    <string name="form_error_title">Judul 5 sampai 120 karakter.</string>
+    <string name="form_error_description">Deskripsi 20 sampai 2000 karakter.</string>
+    <string name="form_error_category">Pilih kategori.</string>
+    <string name="form_error_date_required">Pilih tanggal kegiatan.</string>
+    <string name="form_error_date_future">Tanggal tidak boleh melebihi hari ini.</string>
+    <string name="form_error_date_too_old">Tanggal tidak boleh lebih dari 90 hari ke belakang.</string>
+    <string name="form_error_location">Ambil lokasi sebelum mengirim.</string>
+    <string name="form_error_photo">Lampirkan minimal satu foto atau gambar.</string>
+    <string name="form_delete_confirm_title">Hapus draf?</string>
+    <string name="form_delete_confirm_text">Draf beserta lampirannya akan dihapus dari perangkat ini.</string>
+    <string name="form_delete_confirm">Hapus</string>
+
+    <string name="detail_title">Detail laporan</string>
+    <string name="detail_open_map">Buka di peta</string>
+    <string name="detail_no_location">Belum ada lokasi</string>
+    <string name="detail_no_attachments">Belum ada lampiran</string>
+    <string name="detail_review_note">Catatan verifikator</string>
+    <string name="detail_last_error">Alasan gagal</string>
+    <string name="detail_cancel_queue">Batalkan pengiriman</string>
+    <string name="detail_retry">Coba ulang</string>
+    <string name="detail_edit">Ubah</string>
+    <string name="detail_no_map_app">Tidak ada aplikasi peta di perangkat ini.</string>
 </resources>

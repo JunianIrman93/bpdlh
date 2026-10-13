@@ -76,4 +76,6 @@ dependencies {
     implementation(libs.squareup.okhttp)
     implementation(libs.squareup.okhttp.logging.interceptor)
     implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.coil.compose)
 }
