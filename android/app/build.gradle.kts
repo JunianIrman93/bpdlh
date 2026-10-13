@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.laporlh.app"
+    namespace = "id.lapor.lh"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.laporlh.app"
+        applicationId = "id.lapor.lh"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
