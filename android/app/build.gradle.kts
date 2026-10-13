@@ -7,6 +7,11 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
+fun env(name: String): String? = providers.environmentVariable(name).orNull
+
+val apiBaseUrl: String? = providers.gradleProperty("laporlh.apiBaseUrl").orNull
+val releaseKeystore: String? = env("LAPORLH_KEYSTORE_PATH")
+
 android {
     namespace = "id.lapor.lh"
     compileSdk = 37
@@ -19,10 +24,25 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = releaseKeystore?.let(::file)
+            storePassword = env("LAPORLH_KEYSTORE_PASSWORD")
+            keyAlias = env("LAPORLH_KEY_ALIAS")
+            keyPassword = env("LAPORLH_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl ?: "http://10.0.2.2:8080/api/v1/"}\"")
+        }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl ?: "https://laporlh-api.onrender.com/api/v1/"}\"")
+            signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
         }
     }
 
