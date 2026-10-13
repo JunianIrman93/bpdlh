@@ -20,6 +20,7 @@ const schema = z
     STORAGE_DRIVER: z.enum(['disk', 's3']).default('disk'),
     STORAGE_DISK_PATH: z.string().default('/data/files'),
     S3_ENDPOINT: z.url().optional(),
+    S3_REGION: z.string().optional(),
     S3_BUCKET: z.string().optional(),
     S3_ACCESS_KEY: z.string().optional(),
     S3_SECRET_KEY: z.string().optional(),
@@ -40,7 +41,7 @@ const schema = z
       }
     };
     if (env.STORAGE_DRIVER === 's3') {
-      require(['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'], 'STORAGE_DRIVER=s3');
+      require(['S3_ENDPOINT', 'S3_REGION', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'], 'STORAGE_DRIVER=s3');
     }
     if (env.ADMIN_ENABLED) {
       require(['ADMIN_COOKIE_SECRET'], 'ADMIN_ENABLED=true');

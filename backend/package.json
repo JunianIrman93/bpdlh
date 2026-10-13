@@ -18,6 +18,7 @@
   "dependencies": {
     "@adminjs/express": "^6.1.1",
     "@adminjs/prisma": "^5.0.4",
+    "@aws-sdk/client-s3": "^3.1150.0",
     "@prisma/client": "6.19.3",
     "adminjs": "^7.8.17",
     "bcrypt": "^6.0.0",

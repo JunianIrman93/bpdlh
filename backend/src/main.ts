@@ -31,14 +31,25 @@ import { loadEnv } from './shared/config/env.js';
 import { AppError } from './shared/errors.js';
 import { authenticate } from './shared/http/auth.js';
 import { DiskStorage } from './shared/storage/disk-storage.js';
+import type { FileStorage } from './shared/storage/file-storage.js';
+import { S3Storage } from './shared/storage/s3-storage.js';
 
 const env = loadEnv();
 const logger = pino({ level: env.NODE_ENV === 'test' ? 'silent' : 'info' });
 const clock = systemClock;
 const prisma = new PrismaClient();
 
-if (env.STORAGE_DRIVER !== 'disk') throw new Error('STORAGE_DRIVER=s3 belum didukung');
-const storage = new DiskStorage(env.STORAGE_DISK_PATH);
+const storage: FileStorage =
+  env.STORAGE_DRIVER === 's3'
+    ? new S3Storage({
+        endpoint: env.S3_ENDPOINT!,
+        region: env.S3_REGION!,
+        bucket: env.S3_BUCKET!,
+        accessKeyId: env.S3_ACCESS_KEY!,
+        secretAccessKey: env.S3_SECRET_KEY!,
+        forcePathStyle: env.S3_FORCE_PATH_STYLE,
+      })
+    : new DiskStorage(env.STORAGE_DISK_PATH);
 
 const users = new PrismaUserRepo(prisma);
 const deviceKeys = new PrismaDeviceKeyRepo(prisma);
