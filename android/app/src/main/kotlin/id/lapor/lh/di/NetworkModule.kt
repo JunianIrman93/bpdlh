@@ -7,12 +7,14 @@ import dagger.hilt.components.SingletonComponent
 import id.lapor.lh.BuildConfig
 import id.lapor.lh.core.network.AuthApi
 import id.lapor.lh.feature.auth.data.SessionManager
+import id.lapor.lh.feature.auth.data.TokenAuthenticator
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 private const val BASE_URL = "http://10.0.2.2:8080/api/v1/"
@@ -30,24 +32,30 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(sessionManager: SessionManager): OkHttpClient {
+    fun provideOkHttpClient(
+        sessionManager: SessionManager,
+        authenticator: TokenAuthenticator,
+    ): OkHttpClient {
         val builder =
             OkHttpClient
                 .Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .writeTimeout(120, TimeUnit.SECONDS)
                 .addInterceptor { chain ->
-                    val token = sessionManager.accessToken.value
+                    val token = sessionManager.accessToken
                     val request =
                         if (token != null) {
                             chain
                                 .request()
                                 .newBuilder()
-                                .addHeader("Authorization", "Bearer $token")
+                                .header("Authorization", "Bearer $token")
                                 .build()
                         } else {
                             chain.request()
                         }
                     chain.proceed(request)
-                }
+                }.authenticator(authenticator)
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
         }

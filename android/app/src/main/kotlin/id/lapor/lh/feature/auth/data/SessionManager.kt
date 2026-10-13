@@ -1,8 +1,6 @@
 package id.lapor.lh.feature.auth.data
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import android.os.SystemClock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -10,10 +8,27 @@ import javax.inject.Singleton
 class SessionManager
     @Inject
     constructor() {
-        private val _accessToken = MutableStateFlow<String?>(null)
-        val accessToken: StateFlow<String?> = _accessToken.asStateFlow()
+        private class Token(
+            val value: String,
+            val expiresAtElapsed: Long,
+        )
 
-        fun setAccessToken(token: String) {
-            _accessToken.value = token
+        @Volatile
+        private var token: Token? = null
+
+        val accessToken: String? get() = token?.value
+
+        val remainingSeconds: Long
+            get() = token?.let { (it.expiresAtElapsed - SystemClock.elapsedRealtime()) / 1000 } ?: 0
+
+        fun setAccessToken(
+            value: String,
+            expiresInSeconds: Int,
+        ) {
+            token = Token(value, SystemClock.elapsedRealtime() + expiresInSeconds * 1000L)
+        }
+
+        fun clear() {
+            token = null
         }
     }

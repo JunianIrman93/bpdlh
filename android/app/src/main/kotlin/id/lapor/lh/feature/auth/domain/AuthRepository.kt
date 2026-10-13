@@ -9,4 +9,6 @@ interface AuthRepository {
     )
 
     fun observeCurrentUser(): Flow<User?>
+
+    fun observeSessionEnded(): Flow<Boolean>
 }

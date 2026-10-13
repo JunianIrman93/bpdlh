@@ -52,10 +52,11 @@ fun LaporLHNavHost(navController: NavHostController = rememberNavController()) {
     }
 
     LaunchedEffect(isAuthenticated) {
+        val signedIn = isAuthenticated ?: return@LaunchedEffect
         val onLogin = navController.currentDestination?.hasRoute(LoginDestination::class) ?: true
-        if (isAuthenticated && onLogin) {
+        if (signedIn && onLogin) {
             navController.navigate(ReportListDestination) { popUpTo<LoginDestination> { inclusive = true } }
-        } else if (!isAuthenticated && !onLogin) {
+        } else if (!signedIn && !onLogin) {
             navController.navigate(LoginDestination) { popUpTo(0) { inclusive = true } }
         }
     }

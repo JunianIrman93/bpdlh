@@ -26,3 +26,27 @@ data class UserDto(
     @SerialName("full_name") val fullName: String,
     val role: String,
 )
+
+@Serializable
+data class ChallengeRequestDto(
+    @SerialName("device_id") val deviceId: String,
+)
+
+@Serializable
+data class ChallengeResponseDto(
+    val nonce: String,
+)
+
+@Serializable
+data class RefreshRequestDto(
+    @SerialName("device_id") val deviceId: String,
+    val nonce: String,
+    val signature: String,
+)
+
+@Serializable
+data class TokenResponseDto(
+    @SerialName("access_token") val accessToken: String,
+    @SerialName("expires_in") val expiresIn: Int,
+    @SerialName("device_expires_in") val deviceExpiresIn: Int,
+)

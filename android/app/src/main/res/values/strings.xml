@@ -17,6 +17,7 @@
     <string name="login_error_rate_limited">Terlalu banyak percobaan, coba lagi nanti</string>
     <string name="login_error_network">Tidak dapat terhubung ke server. Periksa jaringan Anda.</string>
     <string name="login_error_generic">Gagal masuk, coba lagi</string>
+    <string name="login_session_ended">Sesi Anda sudah berakhir. Silakan masuk lagi. Laporan yang tersimpan di ponsel tetap aman.</string>
 
     <string name="status_draft">Draf</string>
     <string name="status_waiting_network">Menunggu jaringan</string>

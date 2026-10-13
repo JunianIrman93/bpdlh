@@ -92,6 +92,14 @@ private fun LoginScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (uiState.sessionEnded) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.login_session_ended),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
                 Spacer(modifier = Modifier.height(32.dp))
                 OutlinedTextField(
                     value = uiState.email,

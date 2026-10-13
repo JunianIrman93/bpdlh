@@ -2,6 +2,7 @@ package id.lapor.lh.feature.auth.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -24,6 +25,7 @@ private val USER_EMAIL = stringPreferencesKey("user_email")
 private val USER_FULL_NAME = stringPreferencesKey("user_full_name")
 private val USER_ROLE = stringPreferencesKey("user_role")
 private val DEVICE_EXPIRES_AT = longPreferencesKey("device_expires_at")
+private val SESSION_ENDED = booleanPreferencesKey("session_ended")
 
 @Singleton
 class AuthLocalStore
@@ -33,9 +35,11 @@ class AuthLocalStore
     ) {
         private val store = context.authDataStore
 
-        val currentUser: Flow<User?> = store.data.map { it.toUser() }
+        val currentUser: Flow<User?> = store.data.map { it.toActiveUser() }
 
-        suspend fun currentUser(): User? = store.data.first().toUser()
+        val sessionEnded: Flow<Boolean> = store.data.map { it[SESSION_ENDED] == true }
+
+        suspend fun currentUser(): User? = store.data.first().toActiveUser()
 
         suspend fun deviceId(): String {
             store.data.first()[DEVICE_ID]?.let { return it }
@@ -54,11 +58,28 @@ class AuthLocalStore
                 it[USER_FULL_NAME] = user.fullName
                 it[USER_ROLE] = user.role.name
                 it[DEVICE_EXPIRES_AT] = deviceExpiresAt
+                it.remove(SESSION_ENDED)
             }
         }
 
-        private fun Preferences.toUser(): User? {
+        suspend fun updateDeviceExpiry(deviceExpiresAt: Long) {
+            store.edit { if (it.contains(USER_ID)) it[DEVICE_EXPIRES_AT] = deviceExpiresAt }
+        }
+
+        suspend fun endSession() {
+            store.edit {
+                it.remove(USER_ID)
+                it.remove(USER_EMAIL)
+                it.remove(USER_FULL_NAME)
+                it.remove(USER_ROLE)
+                it.remove(DEVICE_EXPIRES_AT)
+                it[SESSION_ENDED] = true
+            }
+        }
+
+        private fun Preferences.toActiveUser(): User? {
             val id = this[USER_ID] ?: return null
+            if ((this[DEVICE_EXPIRES_AT] ?: 0L) <= System.currentTimeMillis()) return null
             return User(
                 id = id,
                 email = this[USER_EMAIL].orEmpty(),
