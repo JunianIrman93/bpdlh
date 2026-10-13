@@ -13,4 +13,8 @@ interface SyncRepository {
     fun schedulePeriodicSync()
 
     fun observeStatus(): Flow<SyncStatus>
+
+    fun observeLastSyncAt(): Flow<Long?>
+
+    suspend fun <T> withSyncStopped(block: suspend () -> T): T
 }

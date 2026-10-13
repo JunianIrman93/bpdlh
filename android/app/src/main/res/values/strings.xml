@@ -118,4 +118,21 @@
     <string name="detail_retry">Coba ulang</string>
     <string name="detail_edit">Ubah</string>
     <string name="detail_no_map_app">Tidak ada aplikasi peta di perangkat ini.</string>
+
+    <string name="account_title">Akun</string>
+    <string name="account_section_profile">Profil</string>
+    <string name="account_role_field_officer">Petugas lapangan</string>
+    <string name="account_role_reviewer">Verifikator</string>
+    <string name="account_section_sync">Sinkronisasi</string>
+    <string name="account_last_sync">Terakhir disinkronkan %1$s</string>
+    <string name="account_never_synced">Belum pernah disinkronkan.</string>
+    <string name="account_unsent">%1$d laporan belum terkirim.</string>
+    <string name="account_all_sent">Semua laporan sudah terkirim.</string>
+    <string name="account_section_app">Aplikasi</string>
+    <string name="account_version">Versi %1$s</string>
+    <string name="account_logout">Keluar</string>
+    <string name="logout_title">Keluar dari akun?</string>
+    <string name="logout_message">Semua data laporan di ponsel ini akan dihapus. Laporan yang sudah terkirim tetap tersimpan di server.</string>
+    <string name="logout_message_unsent">Ada %1$d laporan yang belum terkirim. Jika keluar sekarang, laporan tersebut akan terhapus dari ponsel ini dan tidak dapat dikembalikan.</string>
+    <string name="logout_confirm_delete">Keluar dan hapus</string>
 </resources>

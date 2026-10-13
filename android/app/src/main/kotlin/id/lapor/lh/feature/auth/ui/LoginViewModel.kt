@@ -46,6 +46,7 @@ class LoginViewModel
                 try {
                     authRepository.login(state.email.trim(), state.password)
                     _uiState.update { it.copy(isLoading = false) }
+                    syncRepository.schedulePeriodicSync()
                     syncRepository.requestSync()
                 } catch (e: ApiException) {
                     _uiState.update { it.copy(isLoading = false, errorRes = e.messageRes()) }

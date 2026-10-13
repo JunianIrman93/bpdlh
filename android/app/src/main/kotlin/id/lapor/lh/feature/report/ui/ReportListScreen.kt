@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -53,6 +54,7 @@ import id.lapor.lh.feature.report.domain.ReportStatus
 @Composable
 fun ReportListRoute(
     onCreateReport: () -> Unit,
+    onOpenAccount: () -> Unit,
     onOpenReport: (Report) -> Unit,
     viewModel: ReportListViewModel = hiltViewModel(),
 ) {
@@ -62,6 +64,7 @@ fun ReportListRoute(
         onFilterChange = viewModel::onFilterChange,
         onRefresh = viewModel::refresh,
         onCreateReport = onCreateReport,
+        onOpenAccount = onOpenAccount,
         onOpenReport = onOpenReport,
     )
 }
@@ -73,6 +76,7 @@ private fun ReportListScreen(
     onFilterChange: (ReportStatus?) -> Unit,
     onRefresh: () -> Unit,
     onCreateReport: () -> Unit,
+    onOpenAccount: () -> Unit,
     onOpenReport: (Report) -> Unit,
 ) {
     Scaffold(
@@ -88,6 +92,11 @@ private fun ReportListScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenAccount) {
+                        Icon(painterResource(R.drawable.ic_account), contentDescription = stringResource(R.string.account_title))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),

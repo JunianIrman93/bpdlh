@@ -20,12 +20,14 @@ import id.lapor.lh.feature.report.domain.ReportRules
 import id.lapor.lh.feature.report.domain.SyncState
 import id.lapor.lh.feature.sync.domain.SyncRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -212,6 +214,13 @@ class ReportRepositoryImpl
         override suspend fun deleteDraft(id: String) {
             val ownerId = ownerId() ?: return
             if (dao.deleteDraft(id, ownerId) == 1) storage.deleteReport(id)
+        }
+
+        override suspend fun clearLocalData() {
+            withContext(Dispatchers.IO) {
+                database.clearAllTables()
+                storage.deleteAll()
+            }
         }
 
         private suspend fun transition(

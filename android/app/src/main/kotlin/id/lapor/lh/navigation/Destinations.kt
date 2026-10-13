@@ -9,6 +9,9 @@ data object LoginDestination
 data object ReportListDestination
 
 @Serializable
+data object AccountDestination
+
+@Serializable
 data class ReportFormDestination(
     val reportId: String,
 )

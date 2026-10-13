@@ -1,5 +1,6 @@
 package id.lapor.lh.feature.auth.data
 
+import id.lapor.lh.core.network.ApiException
 import id.lapor.lh.core.network.AuthApi
 import id.lapor.lh.core.network.apiCall
 import id.lapor.lh.core.network.dto.LoginRequestDto
@@ -9,8 +10,11 @@ import id.lapor.lh.feature.auth.domain.AuthRepository
 import id.lapor.lh.feature.auth.domain.Role
 import id.lapor.lh.feature.auth.domain.User
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+
+private const val REVOKE_TIMEOUT_MS = 10_000L
 
 class AuthRepositoryImpl
     @Inject
@@ -35,6 +39,23 @@ class AuthRepositoryImpl
                 user = response.user.toDomain(),
                 deviceExpiresAt = System.currentTimeMillis() + response.deviceExpiresIn * 1000L,
             )
+        }
+
+        override suspend fun revokeDevice() {
+            if (localStore.currentUser() == null) return
+            withTimeoutOrNull(REVOKE_TIMEOUT_MS) {
+                try {
+                    apiCall(json) { api.logout() }
+                } catch (e: ApiException) {
+                    Unit
+                }
+            }
+        }
+
+        override suspend fun clearLocalSession() {
+            sessionManager.clear()
+            deviceKeyManager.deleteKey()
+            localStore.clearSession()
         }
 
         override fun observeCurrentUser(): Flow<User?> = localStore.currentUser

@@ -43,4 +43,6 @@ interface ReportRepository {
     suspend fun editFailed(id: String)
 
     suspend fun deleteDraft(id: String)
+
+    suspend fun clearLocalData()
 }

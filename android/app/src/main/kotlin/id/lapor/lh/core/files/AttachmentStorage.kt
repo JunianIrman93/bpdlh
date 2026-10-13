@@ -145,6 +145,11 @@ class AttachmentStorage
             File(attachmentsRoot, reportId).deleteRecursively()
         }
 
+        fun deleteAll() {
+            attachmentsRoot.deleteRecursively()
+            discardCameraFiles()
+        }
+
         private fun open(uri: Uri): InputStream = resolver.openInputStream(uri) ?: error("cannot open $uri")
 
         private fun targetFile(

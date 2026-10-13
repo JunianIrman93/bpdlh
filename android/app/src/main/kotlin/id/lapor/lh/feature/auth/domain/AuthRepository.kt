@@ -8,6 +8,10 @@ interface AuthRepository {
         password: String,
     )
 
+    suspend fun revokeDevice()
+
+    suspend fun clearLocalSession()
+
     fun observeCurrentUser(): Flow<User?>
 
     fun observeSessionEnded(): Flow<Boolean>

@@ -35,7 +35,10 @@ import javax.inject.Singleton
 private const val PAGE_SIZE = 100
 private const val PULL_OVERLAP_SECONDS = 60L
 private const val LAST_PULL_KEY = "last_pull_server_time"
+private const val LAST_SYNC_KEY = "last_sync_at"
 private const val UPLOADED = "UPLOADED"
+
+fun lastSyncKey(ownerId: String) = "$LAST_SYNC_KEY:$ownerId"
 
 enum class SyncOutcome {
     DONE,
@@ -67,11 +70,14 @@ class SyncEngine
                         if (push(ownerId, row) == FailureKind.TRANSIENT) retry = true
                     }
                     pull(ownerId)
+                    metaDao.put(SyncMetaEntity(lastSyncKey(ownerId), System.currentTimeMillis().toString()))
                     if (retry) SyncOutcome.RETRY else SyncOutcome.DONE
                 } catch (e: ApiException) {
                     if (kindOf(e) == FailureKind.TRANSIENT) SyncOutcome.RETRY else SyncOutcome.DONE
                 }
             }
+
+        suspend fun <T> exclusive(block: suspend () -> T): T = mutex.withLock { block() }
 
         private suspend fun push(
             ownerId: String,

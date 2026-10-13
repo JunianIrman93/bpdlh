@@ -37,6 +37,10 @@ class DeviceKeyManager
             return Base64.encodeToString(keyPair.public.encoded, Base64.NO_WRAP)
         }
 
+        fun deleteKey() {
+            if (keyStore.containsAlias(KEY_ALIAS)) keyStore.deleteEntry(KEY_ALIAS)
+        }
+
         fun sign(message: String): String {
             val privateKey = keyStore.getKey(KEY_ALIAS, null) as? PrivateKey ?: throw KeyStoreException("device key missing")
             val signature =

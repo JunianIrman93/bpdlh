@@ -1,6 +1,7 @@
 package id.lapor.lh.feature.auth.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -68,13 +69,24 @@ class AuthLocalStore
 
         suspend fun endSession() {
             store.edit {
-                it.remove(USER_ID)
-                it.remove(USER_EMAIL)
-                it.remove(USER_FULL_NAME)
-                it.remove(USER_ROLE)
-                it.remove(DEVICE_EXPIRES_AT)
+                it.removeProfile()
                 it[SESSION_ENDED] = true
             }
+        }
+
+        suspend fun clearSession() {
+            store.edit {
+                it.removeProfile()
+                it.remove(SESSION_ENDED)
+            }
+        }
+
+        private fun MutablePreferences.removeProfile() {
+            remove(USER_ID)
+            remove(USER_EMAIL)
+            remove(USER_FULL_NAME)
+            remove(USER_ROLE)
+            remove(DEVICE_EXPIRES_AT)
         }
 
         private fun Preferences.toActiveUser(): User? {

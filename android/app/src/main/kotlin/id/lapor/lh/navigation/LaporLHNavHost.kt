@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import id.lapor.lh.feature.auth.ui.AccountRoute
 import id.lapor.lh.feature.auth.ui.LoginRoute
 import id.lapor.lh.feature.report.domain.ReportStatus
 import id.lapor.lh.feature.report.ui.ReportDetailRoute
@@ -27,6 +28,7 @@ fun LaporLHNavHost(navController: NavHostController = rememberNavController()) {
         composable<ReportListDestination> {
             ReportListRoute(
                 onCreateReport = { navController.navigate(ReportFormDestination(UUID.randomUUID().toString())) },
+                onOpenAccount = { navController.navigate(AccountDestination) },
                 onOpenReport = { report ->
                     if (report.status == ReportStatus.DRAFT) {
                         navController.navigate(ReportFormDestination(report.id))
@@ -35,6 +37,9 @@ fun LaporLHNavHost(navController: NavHostController = rememberNavController()) {
                     }
                 },
             )
+        }
+        composable<AccountDestination> {
+            AccountRoute(onBack = { navController.popBackStack() })
         }
         composable<ReportFormDestination> {
             ReportFormRoute(onExit = { navController.popBackStack() })
