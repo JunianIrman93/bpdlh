@@ -18,6 +18,7 @@ import id.lapor.lh.feature.report.domain.ReportField
 import id.lapor.lh.feature.report.domain.ReportRepository
 import id.lapor.lh.feature.report.domain.ReportRules
 import id.lapor.lh.feature.report.domain.SyncState
+import id.lapor.lh.feature.sync.domain.SyncScheduler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +51,7 @@ class ReportRepositoryImpl
         private val database: AppDatabase,
         private val storage: AttachmentStorage,
         private val authRepository: AuthRepository,
+        private val syncScheduler: SyncScheduler,
     ) : ReportRepository {
         private val dao = database.reportDao()
 
@@ -183,21 +185,27 @@ class ReportRepositoryImpl
             val ownerId = ownerId() ?: return emptyMap()
             saveDraft(draft)
             val now = System.currentTimeMillis()
-            return database.withTransaction {
-                val report = dao.getReport(draft.id, ownerId)?.toDomain()
-                if (report == null || report.syncState != SyncState.DRAFT) {
-                    emptyMap()
-                } else {
-                    val errors = ReportRules.validateForSubmit(report.draft, report.attachments, ReportRules.today(now))
-                    if (errors.isEmpty()) dao.transition(draft.id, ownerId, SyncState.DRAFT.name, SyncState.QUEUED.name, now)
-                    errors
+            val errors =
+                database.withTransaction {
+                    val report = dao.getReport(draft.id, ownerId)?.toDomain()
+                    if (report == null || report.syncState != SyncState.DRAFT) {
+                        emptyMap()
+                    } else {
+                        val errors = ReportRules.validateForSubmit(report.draft, report.attachments, ReportRules.today(now))
+                        if (errors.isEmpty()) dao.transition(draft.id, ownerId, SyncState.DRAFT.name, SyncState.QUEUED.name, now)
+                        errors
+                    }
                 }
-            }
+            if (errors.isEmpty()) syncScheduler.requestSync()
+            return errors
         }
 
         override suspend fun cancelQueued(id: String) = transition(id, SyncState.QUEUED, SyncState.DRAFT)
 
-        override suspend fun retryFailed(id: String) = transition(id, SyncState.FAILED, SyncState.QUEUED)
+        override suspend fun retryFailed(id: String) {
+            transition(id, SyncState.FAILED, SyncState.QUEUED)
+            syncScheduler.requestSync()
+        }
 
         override suspend fun editFailed(id: String) = transition(id, SyncState.FAILED, SyncState.DRAFT)
 

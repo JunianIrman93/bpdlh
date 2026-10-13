@@ -70,6 +70,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.squareup.retrofit)
     implementation(libs.squareup.retrofit.kotlinx.serialization)

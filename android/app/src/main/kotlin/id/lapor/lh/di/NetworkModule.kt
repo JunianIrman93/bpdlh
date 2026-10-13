@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import id.lapor.lh.BuildConfig
 import id.lapor.lh.core.network.AuthApi
+import id.lapor.lh.core.network.ReportApi
 import id.lapor.lh.feature.auth.data.SessionManager
 import id.lapor.lh.feature.auth.data.TokenAuthenticator
 import kotlinx.serialization.json.Json
@@ -78,4 +79,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideReportApi(retrofit: Retrofit): ReportApi = retrofit.create(ReportApi::class.java)
 }

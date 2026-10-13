@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import id.lapor.lh.R
 import id.lapor.lh.core.network.ApiException
 import id.lapor.lh.feature.auth.domain.AuthRepository
+import id.lapor.lh.feature.sync.domain.SyncScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,7 @@ class LoginViewModel
     @Inject
     constructor(
         private val authRepository: AuthRepository,
+        private val syncScheduler: SyncScheduler,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(LoginUiState())
         val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -44,6 +46,7 @@ class LoginViewModel
                 try {
                     authRepository.login(state.email.trim(), state.password)
                     _uiState.update { it.copy(isLoading = false) }
+                    syncScheduler.requestSync()
                 } catch (e: ApiException) {
                     _uiState.update { it.copy(isLoading = false, errorRes = e.messageRes()) }
                 }

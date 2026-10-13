@@ -3,6 +3,7 @@ package id.lapor.lh.core.database
 import androidx.room.Dao
 import androidx.room.Embedded
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Relation
 import androidx.room.Transaction
@@ -63,7 +64,7 @@ interface ReportDao {
 
     @Query(
         """
-        UPDATE reports SET sync_state = :to, updated_at = :updatedAt
+        UPDATE reports SET sync_state = :to, sync_attempts = 0, last_error = NULL, updated_at = :updatedAt
         WHERE id = :id AND owner_id = :ownerId AND sync_state = :from
         """,
     )
@@ -95,4 +96,72 @@ interface ReportDao {
         attachmentId: String,
         ownerId: String,
     ): Int
+
+    @Transaction
+    @Query("SELECT * FROM reports WHERE owner_id = :ownerId AND sync_state = 'QUEUED' ORDER BY client_created_at ASC")
+    suspend fun getQueued(ownerId: String): List<ReportWithAttachments>
+
+    @Query("UPDATE reports SET sync_state = 'SYNCING' WHERE id = :id AND owner_id = :ownerId AND sync_state = 'QUEUED'")
+    suspend fun claim(
+        id: String,
+        ownerId: String,
+    ): Int
+
+    @Query("UPDATE reports SET sync_state = 'QUEUED' WHERE owner_id = :ownerId AND sync_state = 'SYNCING'")
+    suspend fun requeueInterrupted(ownerId: String): Int
+
+    @Query("UPDATE attachments SET upload_state = 'UPLOADED' WHERE report_id = :reportId AND id IN (:ids)")
+    suspend fun markAttachmentsUploaded(
+        reportId: String,
+        ids: List<String>,
+    )
+
+    @Query(
+        """
+        UPDATE reports SET sync_state = 'SYNCED', sync_attempts = 0, last_error = NULL,
+            server_status = :serverStatus, server_version = :serverVersion, updated_at = :updatedAt
+        WHERE id = :id AND owner_id = :ownerId AND sync_state = 'SYNCING'
+        """,
+    )
+    suspend fun markSynced(
+        id: String,
+        ownerId: String,
+        serverStatus: String,
+        serverVersion: Int,
+        updatedAt: Long,
+    ): Int
+
+    @Query(
+        """
+        UPDATE reports SET sync_state = :to, sync_attempts = :attempts, last_error = :lastError, updated_at = :updatedAt
+        WHERE id = :id AND owner_id = :ownerId AND sync_state = 'SYNCING'
+        """,
+    )
+    suspend fun releaseSyncing(
+        id: String,
+        ownerId: String,
+        to: String,
+        attempts: Int,
+        lastError: String?,
+        updatedAt: Long,
+    ): Int
+
+    @Query(
+        """
+        UPDATE reports SET server_status = :serverStatus, review_note = :reviewNote, server_version = :serverVersion,
+            updated_at = MAX(updated_at, :updatedAt)
+        WHERE id = :id AND owner_id = :ownerId
+        """,
+    )
+    suspend fun applyServerStatus(
+        id: String,
+        ownerId: String,
+        serverStatus: String,
+        reviewNote: String?,
+        serverVersion: Int,
+        updatedAt: Long,
+    ): Int
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertReportIfAbsent(report: ReportEntity)
 }
