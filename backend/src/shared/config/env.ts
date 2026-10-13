@@ -57,7 +57,8 @@ const schema = z
 export type Env = z.infer<typeof schema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const result = schema.safeParse(source);
+  const provided = Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ''));
+  const result = schema.safeParse(provided);
   if (!result.success) {
     const lines = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
     throw new Error(`Konfigurasi tidak valid:\n${lines.join('\n')}`);
