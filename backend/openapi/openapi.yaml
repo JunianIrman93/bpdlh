@@ -705,11 +705,11 @@ components:
         title:
           type: string
           minLength: 5
-          maxLength: 120
+          maxLength: 100
         description:
           type: string
           minLength: 20
-          maxLength: 2000
+          maxLength: 500
         category:
           $ref: '#/components/schemas/Category'
         activity_date:

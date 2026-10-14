@@ -21,8 +21,8 @@ const sha256Hex = z.string().regex(/^[0-9a-fA-F]{64}$/).transform((v) => v.toLow
 const isoDateTime = z.iso.datetime({ offset: true }).transform((v) => new Date(v));
 
 const reportBody = z.object({
-  title: z.string().min(5).max(120),
-  description: z.string().min(20).max(2000),
+  title: z.string().min(5).max(100),
+  description: z.string().min(20).max(500),
   category: z.enum(CATEGORIES),
   activity_date: z.iso.date(),
   location: z.object({

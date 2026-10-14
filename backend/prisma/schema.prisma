@@ -76,8 +76,8 @@ model DeviceKey {
 model Report {
   id                 String       @id @db.Uuid
   userId             String       @map("user_id") @db.Uuid
-  title              String       @db.VarChar(120)
-  description        String       @db.VarChar(2000)
+  title              String       @db.VarChar(100)
+  description        String       @db.VarChar(500)
   category           Category
   activityDate       DateTime     @map("activity_date") @db.Date
   latitude           Float
