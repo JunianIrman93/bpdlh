@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -52,6 +53,8 @@ import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -81,8 +84,8 @@ fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
     )
 }
 
-private const val PHOTO_HEIGHT_FRACTION = 0.42f
-private const val SHEET_MIN_HEIGHT_FRACTION = 0.65f
+private const val PHOTO_HEIGHT_FRACTION = 0.36f
+private const val SHEET_MIN_HEIGHT_FRACTION = 0.7f
 private val PHOTO_MIN_PEEK = 96.dp
 
 private val dimmedPhoto = ColorFilter.colorMatrix(ColorMatrix().apply { setToScale(0.7f, 0.7f, 0.7f, 1f) })
@@ -106,6 +109,9 @@ private fun LoginScreen(
     }
 
     val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    var noticeHeight by remember { mutableIntStateOf(0) }
+    val noticeReserve = with(density) { (noticeHeight - WindowInsets.ime.getBottom(density)).coerceAtLeast(0).toDp() }
     val imeVisible = WindowInsets.isImeVisible
     LaunchedEffect(imeVisible) {
         if (imeVisible) snapshotFlow { scrollState.maxValue }.collect { scrollState.scrollTo(it) }
@@ -137,8 +143,8 @@ private fun LoginScreen(
                 Column(
                     modifier =
                         Modifier
+                            .padding(bottom = noticeReserve)
                             .verticalScroll(scrollState)
-                            .navigationBarsPadding()
                             .padding(start = 24.dp, end = 24.dp, top = 28.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -236,12 +242,18 @@ private fun LoginScreen(
                             Text(stringResource(R.string.login_submit))
                         }
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
-                    CaseStudyNotice(modifier = Modifier.align(Alignment.CenterHorizontally))
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
+        CaseStudyNotice(
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .onSizeChanged { noticeHeight = it.height }
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
+        )
     }
 }
 
