@@ -81,7 +81,7 @@
     <string name="form_location_rationale_text">Lokasi dipakai untuk mencatat tempat kegiatan pada laporan. Lokasi diambil sekali saat Anda membuat laporan baru atau menekan Ambil lokasi, tidak dilacak di latar belakang.</string>
     <string name="form_open_settings">Buka pengaturan</string>
     <string name="form_section_attachments">Lampiran</string>
-    <string name="form_attachment_summary">%1$d dari %2$d lampiran, %3$s dari 30 MB</string>
+    <string name="form_attachment_summary">%1$d dari %2$d lampiran, %3$s dari 10 MB</string>
     <string name="form_attach_photo">Kamera</string>
     <string name="form_attach_image">Galeri</string>
     <string name="form_attach_document">Dokumen</string>
@@ -94,7 +94,7 @@
     <string name="form_attachment_too_many">Maksimal 10 lampiran per laporan.</string>
     <string name="form_attachment_unsupported">Tipe berkas tidak didukung. Pilih PDF, DOCX, XLSX, TXT, atau CSV.</string>
     <string name="form_attachment_too_large">Ukuran berkas maksimal 2 MB.</string>
-    <string name="form_attachment_total_too_large">Total ukuran lampiran maksimal 30 MB.</string>
+    <string name="form_attachment_total_too_large">Total ukuran lampiran maksimal 10 MB.</string>
     <string name="form_attachment_failed">Lampiran gagal disimpan. Coba lagi.</string>
     <string name="form_save_draft">Simpan draf</string>
     <string name="form_submit">Kirim</string>

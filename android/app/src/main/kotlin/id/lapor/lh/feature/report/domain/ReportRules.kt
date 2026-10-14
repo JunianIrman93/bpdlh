@@ -41,7 +41,7 @@ object ReportRules {
     const val MAX_ACTIVITY_AGE_DAYS = 90L
     const val MAX_ATTACHMENTS = 10
     const val MAX_FILE_BYTES = 2L * 1024 * 1024
-    const val MAX_TOTAL_BYTES = 30L * 1024 * 1024
+    const val MAX_TOTAL_BYTES = 10L * 1024 * 1024
     const val POOR_ACCURACY_M = 100f
 
     val zone: ZoneId = ZoneId.of("Asia/Jakarta")
