@@ -94,7 +94,7 @@ APK rilis dibuat oleh workflow `release` setiap ada tag `v*`. Workflow itu menan
 
 Berkas di `docs/sample/` dapat dipakai sebagai lampiran. Salin ke folder Download atau Pictures di ponsel atau emulator. `foto-kegiatan.jpg` berukuran 4000x3000 untuk melihat kompresi ke 1600 piksel, sedangkan `foto-orientasi-exif.jpg` menyimpan piksel terputar dengan tag EXIF Orientation, untuk memeriksa bahwa orientasi dikoreksi dan EXIF dibuang.
 
-**Laporan tanpa sinyal.** Aktifkan mode pesawat, buat laporan baru, lalu isi judul, deskripsi, kategori, dan tanggal. Ambil lokasi; pada sebagian besar ponsel GPS tetap berfungsi dalam mode pesawat. Tambahkan foto dari kamera atau galeri dan sebuah PDF atau XLSX, lalu tekan Kirim. Laporan berstatus Menunggu jaringan, tanpa dialog galat, dan spanduk di daftar menyebut laporan akan dikirim otomatis.
+**Laporan tanpa sinyal.** Aktifkan mode pesawat, buat laporan baru, lalu isi judul, deskripsi, dan kategori. Tanggal hari ini dan lokasi terisi otomatis; pada sebagian besar ponsel GPS tetap berfungsi dalam mode pesawat. Tambahkan foto dari kamera atau galeri dan sebuah PDF atau XLSX, lalu tekan Kirim. Laporan berstatus Menunggu jaringan, tanpa dialog galat, dan spanduk di daftar menyebut laporan akan dikirim otomatis.
 
 **Jaringan kembali.** Matikan mode pesawat. Spanduk berubah menjadi Menyinkronkan, kartu menampilkan progres unggah lampiran, lalu laporan menjadi Terkirim. Di panel admin, laporan berstatus SUBMITTED dengan semua lampirannya. Setelah verifikator menekan Verifikasi atau Tolak, tarik daftar ke bawah di aplikasi untuk melihat status dan catatannya.
 
