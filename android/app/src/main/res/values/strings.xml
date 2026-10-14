@@ -69,7 +69,7 @@
     <string name="form_counter">%1$d/%2$d</string>
     <string name="form_section_location">Lokasi</string>
     <string name="form_location_capture">Ambil lokasi</string>
-    <string name="form_location_retake">Ambil ulang</string>
+    <string name="form_location_retake">Ambil ulang lokasi</string>
     <string name="form_location_searching">Mencari lokasi</string>
     <string name="form_location_accuracy">Akurasi %1$d m, diambil %2$s</string>
     <string name="form_location_mock">Lokasi tiruan terdeteksi. Tetap dicatat pada laporan.</string>

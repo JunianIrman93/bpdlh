@@ -85,6 +85,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -631,7 +632,25 @@ private fun LocationSection(
         }
     }
     val error = uiState.errors[ReportField.LOCATION]
-    SectionCard(title = stringResource(R.string.form_section_location), isError = error != null, icon = R.drawable.ic_location) {
+    val requestLocation = {
+        if (context.hasFineLocation()) {
+            actions.onCaptureLocation()
+        } else {
+            rationaleIsAuto = false
+            showRationale = true
+        }
+    }
+    SectionCard(
+        title = stringResource(R.string.form_section_location),
+        isError = error != null,
+        icon = R.drawable.ic_location,
+        action =
+            if (location != null) {
+                { RetakeLocationAction(isLocating = uiState.isLocating, onClick = requestLocation) }
+            } else {
+                null
+            },
+    ) {
         if (location != null) LocationDetails(location)
         when (uiState.locationProblem) {
             LocationProblem.DENIED -> Notice(stringResource(R.string.form_location_denied), isError = true)
@@ -640,41 +659,34 @@ private fun LocationSection(
             null -> Unit
         }
         AnimatedNotice(text = error?.takeIf { uiState.locationProblem == null }?.let { stringResource(it.messageRes()) })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            FilledTonalButton(
-                onClick = {
-                    if (context.hasFineLocation()) {
-                        actions.onCaptureLocation()
-                    } else {
-                        rationaleIsAuto = false
-                        showRationale = true
-                    }
-                },
-                enabled = !uiState.isLocating,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.height(48.dp),
-            ) {
-                if (uiState.isLocating) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.form_location_searching))
-                } else {
-                    Icon(painterResource(R.drawable.ic_location), contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(if (location == null) R.string.form_location_capture else R.string.form_location_retake))
-                }
-            }
+        val settingsAction =
             when (uiState.locationProblem) {
-                LocationProblem.DENIED -> {
-                    TextButton(onClick = actions.onOpenAppSettings) { Text(stringResource(R.string.form_open_settings)) }
+                LocationProblem.DENIED -> actions.onOpenAppSettings
+                LocationProblem.DISABLED -> actions.onOpenLocationSettings
+                else -> null
+            }
+        if (location == null || settingsAction != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (location == null) {
+                    FilledTonalButton(
+                        onClick = requestLocation,
+                        enabled = !uiState.isLocating,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.height(48.dp),
+                    ) {
+                        if (uiState.isLocating) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.form_location_searching))
+                        } else {
+                            Icon(painterResource(R.drawable.ic_location), contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.form_location_capture))
+                        }
+                    }
                 }
-
-                LocationProblem.DISABLED -> {
-                    TextButton(onClick = actions.onOpenLocationSettings) { Text(stringResource(R.string.form_open_settings)) }
-                }
-
-                else -> {
-                    Unit
+                if (settingsAction != null) {
+                    TextButton(onClick = settingsAction) { Text(stringResource(R.string.form_open_settings)) }
                 }
             }
         }
@@ -694,6 +706,41 @@ private fun LocationSection(
         )
     }
 }
+
+@Composable
+private fun RetakeLocationAction(
+    isLocating: Boolean,
+    onClick: () -> Unit,
+) {
+    val headerAligned = Modifier.headerAction()
+    if (isLocating) {
+        val description = stringResource(R.string.form_location_searching)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = headerAligned.size(48.dp).clearAndSetSemantics { contentDescription = description },
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        }
+    } else {
+        IconButton(onClick = onClick, modifier = headerAligned) {
+            Icon(
+                painterResource(R.drawable.ic_refresh),
+                contentDescription = stringResource(R.string.form_location_retake),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+private fun Modifier.headerAction(): Modifier =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val height = HEADER_ICON_SIZE.roundToPx()
+        val inset = (placeable.width - height) / 2
+        layout(placeable.width - inset, height) { placeable.place(0, (height - placeable.height) / 2) }
+    }
+
+private val HEADER_ICON_SIZE = 24.dp
 
 @Composable
 internal fun LocationDetails(location: ReportLocation) {
@@ -829,6 +876,7 @@ internal fun SectionCard(
     title: String,
     isError: Boolean,
     @DrawableRes icon: Int? = null,
+    action: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     OutlinedCard(
@@ -850,7 +898,8 @@ internal fun SectionCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                action?.invoke()
             }
             content()
         }
