@@ -87,7 +87,7 @@
     <string name="form_attachment_remove_description">Hapus lampiran %1$s</string>
     <string name="form_attachment_too_many">Maksimal 10 lampiran per laporan.</string>
     <string name="form_attachment_unsupported">Tipe berkas tidak didukung. Dokumen: PDF, DOCX, XLSX. Berkas: TXT, CSV.</string>
-    <string name="form_attachment_too_large">Ukuran berkas maksimal 10 MB.</string>
+    <string name="form_attachment_too_large">Ukuran berkas maksimal 2 MB.</string>
     <string name="form_attachment_total_too_large">Total ukuran lampiran maksimal 30 MB.</string>
     <string name="form_attachment_failed">Lampiran gagal disimpan. Coba lagi.</string>
     <string name="form_save_draft">Simpan draf</string>
