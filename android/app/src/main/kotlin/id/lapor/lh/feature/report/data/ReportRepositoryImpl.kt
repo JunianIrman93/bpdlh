@@ -200,7 +200,7 @@ class ReportRepositoryImpl
                     is Imported.Stored -> imported
                 }
 
-            val error = ReportRules.checkNewAttachment(current.attachments, kind, stored.mimeType, stored.file.sizeBytes)
+            val error = ReportRules.checkNewAttachment(current.attachments, stored.kind, stored.mimeType, stored.file.sizeBytes)
             if (error != null) {
                 storage.delete(stored.file.path)
                 return AddAttachmentResult.Rejected(error)
@@ -214,7 +214,7 @@ class ReportRepositoryImpl
                             AttachmentEntity(
                                 id = attachmentId,
                                 reportId = draft.id,
-                                kind = kind.name,
+                                kind = stored.kind.name,
                                 fileName = stored.fileName.take(MAX_FILE_NAME),
                                 mimeType = stored.mimeType,
                                 sizeBytes = stored.file.sizeBytes,
@@ -350,7 +350,7 @@ class ReportRepositoryImpl
             return when (kind) {
                 AttachmentKind.PHOTO -> {
                     val file = storage.storeCompressedImage(source, reportId, attachmentId)
-                    Imported.Stored(file, "image/jpeg", "foto-$stamp.jpg")
+                    Imported.Stored(file, kind, "image/jpeg", "foto-$stamp.jpg")
                 }
 
                 AttachmentKind.IMAGE -> {
@@ -361,21 +361,19 @@ class ReportRepositoryImpl
                             ?.substringBeforeLast('.')
                             ?.takeIf { it.isNotBlank() }
                     val file = storage.storeCompressedImage(source, reportId, attachmentId)
-                    Imported.Stored(file, "image/jpeg", "${baseName ?: "gambar-$stamp"}.jpg")
+                    Imported.Stored(file, kind, "image/jpeg", "${baseName ?: "gambar-$stamp"}.jpg")
                 }
 
                 AttachmentKind.DOCUMENT, AttachmentKind.FILE -> {
                     val info = storage.describe(source)
-                    val mime = info.mimeType
-                    if (mime == null || mime !in ReportRules.mimeTypesByKind.getValue(kind)) {
-                        return Imported.Rejected(AttachmentError.UNSUPPORTED_TYPE)
-                    }
+                    val mime = info.mimeType ?: return Imported.Rejected(AttachmentError.UNSUPPORTED_TYPE)
+                    val documentKind = ReportRules.documentKindOf(mime) ?: return Imported.Rejected(AttachmentError.UNSUPPORTED_TYPE)
                     val extension = extensionByMime.getValue(mime)
                     val file =
                         storage.storeCopy(source, reportId, attachmentId, extension, ReportRules.MAX_FILE_BYTES)
                             ?: return Imported.Rejected(AttachmentError.FILE_TOO_LARGE)
-                    val fallback = if (kind == AttachmentKind.DOCUMENT) "dokumen-$stamp.$extension" else "berkas-$stamp.$extension"
-                    Imported.Stored(file, mime, info.displayName ?: fallback)
+                    val fallback = if (documentKind == AttachmentKind.DOCUMENT) "dokumen-$stamp.$extension" else "berkas-$stamp.$extension"
+                    Imported.Stored(file, documentKind, mime, info.displayName ?: fallback)
                 }
             }
         }
@@ -384,6 +382,7 @@ class ReportRepositoryImpl
 private sealed interface Imported {
     data class Stored(
         val file: StoredFile,
+        val kind: AttachmentKind,
         val mimeType: String,
         val fileName: String,
     ) : Imported

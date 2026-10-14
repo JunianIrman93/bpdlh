@@ -61,6 +61,12 @@ object ReportRules {
             AttachmentKind.FILE to setOf("text/plain", "text/csv"),
         )
 
+    val documentMimeTypes: Set<String> =
+        mimeTypesByKind.getValue(AttachmentKind.DOCUMENT) + mimeTypesByKind.getValue(AttachmentKind.FILE)
+
+    fun documentKindOf(mimeType: String): AttachmentKind? =
+        listOf(AttachmentKind.DOCUMENT, AttachmentKind.FILE).firstOrNull { mimeType in mimeTypesByKind.getValue(it) }
+
     fun today(nowMillis: Long): LocalDate = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
 
     fun earliestActivityDate(today: LocalDate): LocalDate = today.minusDays(MAX_ACTIVITY_AGE_DAYS)
