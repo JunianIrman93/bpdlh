@@ -11,9 +11,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
@@ -39,6 +42,7 @@ fun LaporLHNavHost(navController: NavHostController = rememberNavController()) {
     NavHost(
         navController = navController,
         startDestination = LoginDestination,
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
         enterTransition = { slideInHorizontally(LaporLHMotion.spatial()) { it / 8 } + fadeInThrough() },
         exitTransition = { slideOutHorizontally(LaporLHMotion.spatial()) { -it / 8 } + fadeOutThrough() },
         popEnterTransition = { slideInHorizontally(LaporLHMotion.spatial()) { -it / 8 } + fadeInThrough() },
