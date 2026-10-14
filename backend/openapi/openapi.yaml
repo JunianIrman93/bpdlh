@@ -734,7 +734,7 @@ components:
           maxItems: 10
           description: >-
             Manifes. Wajib memuat minimal satu lampiran berjenis PHOTO atau
-            IMAGE, dengan total ukuran maksimal 30 MB. Pelanggaran dijawab
+            IMAGE, dengan total ukuran maksimal 10 MB. Pelanggaran dijawab
             400 VALIDATION_ERROR.
           items:
             $ref: '#/components/schemas/AttachmentManifestItem'

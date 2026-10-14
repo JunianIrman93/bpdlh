@@ -30,7 +30,7 @@ export const ALLOWED_MIME_TYPES = [...new Set(Object.values(MIME_TYPES_BY_KIND).
 
 export const REPORT_LIMITS = {
   maxAttachments: 10,
-  maxTotalBytes: 30 * 1024 * 1024,
+  maxTotalBytes: 10 * 1024 * 1024,
   maxActivityAgeDays: 90,
 };
 
@@ -122,7 +122,7 @@ export function validateContent(
   }
   const total = items.reduce((sum, a) => sum + a.sizeBytes, 0);
   if (total > REPORT_LIMITS.maxTotalBytes) {
-    details.push({ field: 'attachments', issue: 'total_size', message: 'Total ukuran lampiran maksimal 30 MB' });
+    details.push({ field: 'attachments', issue: 'total_size', message: `Total ukuran lampiran maksimal ${REPORT_LIMITS.maxTotalBytes / 1_048_576} MB` });
   }
   items.forEach((item, i) => {
     if (!MIME_TYPES_BY_KIND[item.kind].includes(item.mimeType)) {
