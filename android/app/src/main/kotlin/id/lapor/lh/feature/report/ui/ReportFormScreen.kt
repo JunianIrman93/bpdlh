@@ -231,11 +231,13 @@ private fun ReportFormScreen(
                 OutlinedButton(
                     onClick = actions.onSaveDraft,
                     enabled = !uiState.isBusy,
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f).height(48.dp),
                 ) { Text(stringResource(R.string.form_save_draft)) }
                 Button(
                     onClick = actions.onSubmit,
                     enabled = !uiState.isBusy && !uiState.isAddingAttachment && !uiState.isLocating,
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.weight(1f).height(48.dp),
                 ) { Text(stringResource(R.string.form_submit)) }
             }
@@ -488,6 +490,7 @@ private fun LocationSection(
                     if (context.hasFineLocation()) actions.onCaptureLocation() else showRationale = true
                 },
                 enabled = !uiState.isLocating,
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.height(48.dp),
             ) {
                 if (uiState.isLocating) {
@@ -593,7 +596,12 @@ private fun AttachButton(
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
-    OutlinedButton(onClick = onClick, enabled = enabled, modifier = modifier.height(48.dp)) { Text(label) }
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.height(48.dp),
+    ) { Text(label) }
 }
 
 @Composable

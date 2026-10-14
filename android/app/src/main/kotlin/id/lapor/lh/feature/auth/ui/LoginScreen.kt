@@ -142,6 +142,7 @@ private fun LoginScreen(
                 Button(
                     onClick = submit,
                     enabled = canSubmit,
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                 ) {
                     if (uiState.isLoading) {

@@ -113,6 +113,7 @@ private fun AccountScreen(
                 enabled = !uiState.isLoggingOut,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
             ) {
                 if (uiState.isLoggingOut) {

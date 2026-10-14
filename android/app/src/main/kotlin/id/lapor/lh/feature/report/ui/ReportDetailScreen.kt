@@ -185,7 +185,7 @@ private fun ServerDetailCard(
             val message =
                 if (state == DetailLoadState.NETWORK_ERROR) R.string.detail_server_offline else R.string.detail_server_failed
             Notice(stringResource(message), isError = false)
-            OutlinedButton(onClick = onReload, modifier = Modifier.height(48.dp)) {
+            OutlinedButton(onClick = onReload, shape = MaterialTheme.shapes.medium, modifier = Modifier.height(48.dp)) {
                 Text(stringResource(R.string.detail_server_reload))
             }
         }
@@ -231,24 +231,32 @@ private fun Actions(
 ) {
     when (report.status) {
         ReportStatus.WAITING_NETWORK -> {
-            OutlinedButton(onClick = onCancelQueued, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            OutlinedButton(
+                onClick = onCancelQueued,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+            ) {
                 Text(stringResource(R.string.detail_cancel_queue))
             }
         }
 
         ReportStatus.FAILED -> {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = { onEdit(report.id) }, modifier = Modifier.weight(1f).height(48.dp)) {
+                OutlinedButton(
+                    onClick = { onEdit(report.id) },
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                ) {
                     Text(stringResource(R.string.detail_edit))
                 }
-                Button(onClick = onRetry, modifier = Modifier.weight(1f).height(48.dp)) {
+                Button(onClick = onRetry, shape = MaterialTheme.shapes.medium, modifier = Modifier.weight(1f).height(48.dp)) {
                     Text(stringResource(R.string.detail_retry))
                 }
             }
         }
 
         ReportStatus.DRAFT -> {
-            Button(onClick = { onEdit(report.id) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            Button(onClick = { onEdit(report.id) }, shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth().height(48.dp)) {
                 Text(stringResource(R.string.detail_edit))
             }
         }
