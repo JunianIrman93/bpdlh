@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:width="44dp"
-        android:height="40dp"
-        android:left="43dp"
+        android:width="33dp"
+        android:height="30dp"
+        android:left="57dp"
         android:drawable="@drawable/bpdlh_leaves"
         android:gravity="center_vertical|start" />
     <item
-        android:width="62dp"
-        android:height="33dp"
-        android:left="95dp"
+        android:width="47dp"
+        android:height="25dp"
+        android:left="96dp"
         android:gravity="center_vertical|start">
         <bitmap
             android:src="@drawable/bpdlh_wordmark"

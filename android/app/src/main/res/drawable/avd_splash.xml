@@ -12,10 +12,10 @@
                 android:pivotX="54"
                 android:pivotY="54">
                 <group
-                    android:scaleX="2.4"
-                    android:scaleY="2.4"
-                    android:translateX="25.2"
-                    android:translateY="25.2">
+                    android:scaleX="1.68"
+                    android:scaleY="1.68"
+                    android:translateX="33.84"
+                    android:translateY="33.84">
                     <path
                         android:fillColor="@color/logo_foreground"
                         android:pathData="M4,20C4,10.6 10.6,4 20,4C20,13.4 13.4,20 4,20Z" />
