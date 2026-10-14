@@ -33,11 +33,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -211,6 +212,7 @@ private fun LoginScreen(
                         singleLine = true,
                         enabled = !uiState.isLoading,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                        shape = MaterialTheme.shapes.large,
                         modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -224,16 +226,20 @@ private fun LoginScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { submit() }),
                         trailingIcon = {
-                            TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Text(
-                                    text =
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            if (passwordVisible) R.drawable.ic_password_hide else R.drawable.ic_password_show,
+                                        ),
+                                    contentDescription =
                                         stringResource(
                                             if (passwordVisible) R.string.login_hide_password else R.string.login_show_password,
                                         ),
-                                    style = MaterialTheme.typography.labelSmall,
                                 )
                             }
                         },
+                        shape = MaterialTheme.shapes.large,
                         modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
                     )
                     AnimatedVisibility(

@@ -10,12 +10,12 @@
     <string name="login_case_study_for">Studi kasus untuk</string>
     <string name="bpdlh_full_name">Badan Pengelola Dana Lingkungan Hidup</string>
     <string name="app_prototype_notice">Prototipe, bukan aplikasi resmi BPDLH.</string>
-    <string name="login_email">Surel</string>
-    <string name="login_password">Kata sandi</string>
-    <string name="login_show_password">Tampilkan</string>
-    <string name="login_hide_password">Sembunyikan</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_show_password">Tampilkan password</string>
+    <string name="login_hide_password">Sembunyikan password</string>
     <string name="login_submit">Masuk</string>
-    <string name="login_error_credentials">Surel atau kata sandi salah</string>
+    <string name="login_error_credentials">Email atau password salah</string>
     <string name="login_error_validation">Isian belum lengkap atau tidak valid</string>
     <string name="login_error_rate_limited">Terlalu banyak percobaan, coba lagi nanti</string>
     <string name="login_error_network">Tidak dapat terhubung ke server. Periksa jaringan Anda.</string>
