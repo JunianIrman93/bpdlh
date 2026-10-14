@@ -145,6 +145,7 @@ private fun AccountScreen(
             }
             SectionCard(title = stringResource(R.string.account_section_app), isError = false, icon = R.drawable.ic_info) {
                 Text(stringResource(R.string.account_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodyLarge)
+                SecondaryText(stringResource(R.string.app_prototype_notice))
             }
             OutlinedButton(
                 onClick = { confirmLogout = true },

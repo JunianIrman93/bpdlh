@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -28,7 +29,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -48,16 +48,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import id.lapor.lh.R
@@ -124,13 +128,12 @@ private fun LoginScreen(
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        color = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        color = colorResource(R.color.logo_background),
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.size(48.dp),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(painterResource(R.drawable.ic_splash_check), contentDescription = null, modifier = Modifier.size(28.dp))
+                            Image(painterResource(R.drawable.ic_logo_mark), contentDescription = null, modifier = Modifier.size(32.dp))
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -215,8 +218,47 @@ private fun LoginScreen(
                         Text(stringResource(R.string.login_submit))
                     }
                 }
+                Spacer(modifier = Modifier.height(32.dp))
+                CaseStudyNotice(modifier = Modifier.align(Alignment.CenterHorizontally))
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun CaseStudyNotice(modifier: Modifier = Modifier) {
+    val organization = stringResource(R.string.bpdlh_full_name)
+    val wordmarkTint = if (isSystemInDarkTheme()) ColorFilter.tint(MaterialTheme.colorScheme.onSurface) else null
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.semantics(mergeDescendants = true) {},
+    ) {
+        Text(
+            text = stringResource(R.string.login_case_study_for),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.semantics { contentDescription = organization },
+        ) {
+            Image(painterResource(R.drawable.bpdlh_leaves), contentDescription = null, modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Image(
+                painter = painterResource(R.drawable.bpdlh_wordmark),
+                contentDescription = null,
+                colorFilter = wordmarkTint,
+                modifier = Modifier.height(24.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.app_prototype_notice),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }

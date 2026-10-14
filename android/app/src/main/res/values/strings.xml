@@ -7,6 +7,9 @@
     <string name="action_continue">Lanjutkan</string>
 
     <string name="login_subtitle">Masuk untuk mulai melapor</string>
+    <string name="login_case_study_for">Studi kasus untuk</string>
+    <string name="bpdlh_full_name">Badan Pengelola Dana Lingkungan Hidup</string>
+    <string name="app_prototype_notice">Prototipe, bukan aplikasi resmi BPDLH.</string>
     <string name="login_email">Surel</string>
     <string name="login_password">Kata sandi</string>
     <string name="login_show_password">Tampilkan</string>
@@ -44,7 +47,6 @@
     <string name="reports_empty_filtered">Tidak ada laporan dengan status ini.</string>
     <string name="reports_no_category">Kategori belum dipilih</string>
     <string name="reports_untitled">Tanpa judul</string>
-    <string name="reports_attachment_count">%1$d lampiran</string>
     <string name="sync_offline">Tidak ada jaringan. Laporan tetap tersimpan di ponsel.</string>
     <string name="sync_offline_pending">Tidak ada jaringan. %1$d laporan akan dikirim otomatis saat tersambung.</string>
     <string name="sync_in_progress">Menyinkronkan laporan…</string>
@@ -127,7 +129,6 @@
     <string name="detail_server_reload">Muat ulang</string>
 
     <string name="account_title">Akun</string>
-    <string name="account_section_profile">Profil</string>
     <string name="account_role_field_officer">Petugas lapangan</string>
     <string name="account_role_reviewer">Verifikator</string>
     <string name="account_section_sync">Sinkronisasi</string>
