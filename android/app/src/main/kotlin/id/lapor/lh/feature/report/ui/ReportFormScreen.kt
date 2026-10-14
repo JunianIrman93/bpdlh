@@ -25,19 +25,27 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -49,6 +57,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
@@ -62,11 +71,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -75,14 +86,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -100,6 +115,7 @@ import id.lapor.lh.feature.report.domain.Category
 import id.lapor.lh.feature.report.domain.ReportField
 import id.lapor.lh.feature.report.domain.ReportLocation
 import id.lapor.lh.feature.report.domain.ReportRules
+import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -379,38 +395,112 @@ private fun CategoryField(
         onClick = { open = true },
     )
     if (open) {
-        AlertDialog(
-            onDismissRequest = { open = false },
-            title = { Text(stringResource(R.string.form_field_category)) },
-            text = {
-                Column {
-                    Category.entries.forEach { category ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .selectable(
-                                        selected = uiState.draft.category == category,
-                                        role = Role.RadioButton,
-                                        onClick = {
-                                            onCategoryChange(category)
-                                            open = false
-                                        },
-                                    ),
-                        ) {
-                            RadioButton(selected = uiState.draft.category == category, onClick = null)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(stringResource(category.labelRes()), style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.action_cancel)) } },
+        CategorySheet(
+            selected = uiState.draft.category,
+            onSelect = onCategoryChange,
+            onClose = { open = false },
         )
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategorySheet(
+    selected: Category?,
+    onSelect: (Category) -> Unit,
+    onClose: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val windowHeight = LocalWindowInfo.current.containerSize.height
+    val maxHeight = with(LocalDensity.current) { windowHeight.toDp() } * CATEGORY_SHEET_MAX_FRACTION
+    var query by rememberSaveable { mutableStateOf("") }
+    val labels = Category.entries.associateWith { stringResource(it.labelRes()) }
+    val matches = Category.entries.filter { labels.getValue(it).contains(query.trim(), ignoreCase = true) }
+    ModalBottomSheet(
+        onDismissRequest = onClose,
+        sheetState = sheetState,
+        shape = MaterialTheme.shapes.extraLarge.copy(bottomStart = CornerSize(0.dp), bottomEnd = CornerSize(0.dp)),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = null,
+        contentWindowInsets = { WindowInsets(0) },
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxHeight)
+                    .windowInsetsPadding(BottomSheetDefaults.windowInsets)
+                    .padding(bottom = 16.dp),
+        ) {
+            BottomSheetDefaults.DragHandle(modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text(
+                text = stringResource(R.string.form_field_category),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text(stringResource(R.string.form_category_search)) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { query = "" }) {
+                            Icon(
+                                painterResource(R.drawable.ic_close),
+                                contentDescription = stringResource(R.string.form_category_search_clear),
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+            )
+            if (matches.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.form_category_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                )
+            }
+            LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                items(matches, key = { it.name }) { category ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = selected == category,
+                                    role = Role.RadioButton,
+                                    onClick = {
+                                        onSelect(category)
+                                        scope.launch { sheetState.hide() }.invokeOnCompletion { onClose() }
+                                    },
+                                ).padding(horizontal = 24.dp, vertical = 8.dp),
+                    ) {
+                        CategoryTile(category = category, size = 40.dp)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = labels.getValue(category),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                        RadioButton(selected = selected == category, onClick = null)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private const val CATEGORY_SHEET_MAX_FRACTION = 0.75f
 
 @Composable
 private fun DateField(
