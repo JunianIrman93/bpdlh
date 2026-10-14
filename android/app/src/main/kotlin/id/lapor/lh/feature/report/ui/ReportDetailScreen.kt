@@ -9,6 +9,7 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,8 +39,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +51,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
@@ -92,6 +97,7 @@ private fun ReportDetailScreen(
     onEdit: (String) -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
+    var previewId by rememberSaveable { mutableStateOf<String?>(null) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -109,6 +115,7 @@ private fun ReportDetailScreen(
     ) { padding ->
         if (report == null) return@Scaffold
         val draft = report.draft
+        report.attachments.firstOrNull { it.id == previewId }?.let { ImagePreview(attachment = it, onClose = { previewId = null }) }
         Column(
             modifier =
                 Modifier
@@ -118,8 +125,9 @@ private fun ReportDetailScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            val cover = report.attachments.firstOrNull { it.isImage && it.localPath.isNotEmpty() }
+            val cover = report.attachments.firstOrNull { it.canPreview }
             if (cover != null) {
+                val openLabel = stringResource(R.string.preview_open)
                 AsyncImage(
                     model = File(cover.localPath),
                     contentDescription = cover.fileName,
@@ -128,7 +136,8 @@ private fun ReportDetailScreen(
                         Modifier
                             .fillMaxWidth()
                             .aspectRatio(16f / 10f)
-                            .clip(MaterialTheme.shapes.large),
+                            .clip(MaterialTheme.shapes.large)
+                            .clickable(onClickLabel = openLabel, role = Role.Button) { previewId = cover.id },
                 )
             }
             Header(report = report)
@@ -189,7 +198,13 @@ private fun ReportDetailScreen(
                             if (report.attachments.isEmpty()) {
                                 Notice(stringResource(R.string.detail_no_attachments), isError = false)
                             } else {
-                                report.attachments.forEach { AttachmentRow(attachment = it, onRemove = null) }
+                                report.attachments.forEach { attachment ->
+                                    AttachmentRow(
+                                        attachment = attachment,
+                                        onRemove = null,
+                                        onOpen = if (attachment.canPreview) ({ previewId = attachment.id }) else null,
+                                    )
+                                }
                             }
                         }
                     }

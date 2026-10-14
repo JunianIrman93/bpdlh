@@ -797,7 +797,9 @@ private fun AttachmentSection(
     val error = uiState.errors[ReportField.ATTACHMENTS]
     val canAdd = !uiState.isAddingAttachment && uiState.attachments.size < ReportRules.MAX_ATTACHMENTS
     var showOptions by rememberSaveable { mutableStateOf(false) }
+    var previewId by rememberSaveable { mutableStateOf<String?>(null) }
     if (showOptions) AttachmentSheet(actions = actions, onClose = { showOptions = false })
+    uiState.attachments.firstOrNull { it.id == previewId }?.let { ImagePreview(attachment = it, onClose = { previewId = null }) }
     SectionCard(title = stringResource(R.string.form_section_attachments), isError = error != null, icon = R.drawable.ic_file) {
         Text(
             text =
@@ -829,7 +831,11 @@ private fun AttachmentSection(
             }
         }
         uiState.attachments.forEach { attachment ->
-            AttachmentRow(attachment = attachment, onRemove = { actions.onRemoveAttachment(attachment.id) })
+            AttachmentRow(
+                attachment = attachment,
+                onRemove = { actions.onRemoveAttachment(attachment.id) },
+                onOpen = if (attachment.canPreview) ({ previewId = attachment.id }) else null,
+            )
         }
     }
 }
@@ -894,10 +900,19 @@ private fun AttachmentOption(
 internal fun AttachmentRow(
     attachment: Attachment,
     onRemove: (() -> Unit)?,
+    onOpen: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        if (attachment.isImage && attachment.localPath.isNotEmpty()) {
+    val openLabel = stringResource(R.string.preview_open)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.small)
+                .then(if (onOpen != null) Modifier.clickable(onClickLabel = openLabel, role = Role.Button, onClick = onOpen) else Modifier),
+    ) {
+        if (attachment.canPreview) {
             AsyncImage(
                 model = File(attachment.localPath),
                 contentDescription = attachment.fileName,
@@ -996,6 +1011,9 @@ internal fun Notice(
 
 internal val Attachment.isImage: Boolean
     get() = kind == AttachmentKind.PHOTO || kind == AttachmentKind.IMAGE
+
+internal val Attachment.canPreview: Boolean
+    get() = isImage && localPath.isNotEmpty()
 
 @DrawableRes
 private fun AttachmentKind.iconRes(): Int =

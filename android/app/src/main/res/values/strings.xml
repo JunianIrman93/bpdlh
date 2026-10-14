@@ -92,6 +92,8 @@
     <string name="form_attach_document_hint">PDF, Word, Excel, TXT, atau CSV</string>
     <string name="form_attachment_saving">Menyimpan lampiran</string>
     <string name="form_attachment_remove_description">Hapus lampiran %1$s</string>
+    <string name="preview_open">Lihat gambar</string>
+    <string name="preview_close">Tutup pratinjau</string>
     <string name="form_attachment_too_many">Maksimal 10 lampiran per laporan.</string>
     <string name="form_attachment_unsupported">Tipe berkas tidak didukung. Pilih PDF, DOCX, XLSX, TXT, atau CSV.</string>
     <string name="form_attachment_too_large">Ukuran berkas maksimal 2 MB.</string>
