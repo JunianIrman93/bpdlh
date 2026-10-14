@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -49,6 +48,7 @@ import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import id.lapor.lh.R
 import id.lapor.lh.core.ui.LaporLHMotion
+import id.lapor.lh.core.ui.LocalDarkTheme
 
 @Composable
 fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
@@ -77,6 +78,8 @@ fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
         onSubmit = viewModel::submit,
     )
 }
+
+private val dimmedPhoto = ColorFilter.colorMatrix(ColorMatrix().apply { setToScale(0.7f, 0.7f, 0.7f, 1f) })
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -116,6 +119,7 @@ private fun LoginScreen(
                     painter = painterResource(R.drawable.login_header),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    colorFilter = if (LocalDarkTheme.current) dimmedPhoto else null,
                     modifier = Modifier.fillMaxSize(),
                 )
                 Box(
@@ -229,7 +233,7 @@ private fun LoginScreen(
 @Composable
 private fun CaseStudyNotice(modifier: Modifier = Modifier) {
     val organization = stringResource(R.string.bpdlh_full_name)
-    val wordmarkTint = if (isSystemInDarkTheme()) ColorFilter.tint(MaterialTheme.colorScheme.onSurface) else null
+    val wordmarkTint = if (LocalDarkTheme.current) ColorFilter.tint(MaterialTheme.colorScheme.onSurface) else null
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.semantics(mergeDescendants = true) {},

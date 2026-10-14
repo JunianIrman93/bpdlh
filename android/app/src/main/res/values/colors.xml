@@ -3,4 +3,5 @@
     <color name="splash_background">#F4F7FB</color>
     <color name="logo_background">#1E40AF</color>
     <color name="logo_foreground">#FFFFFF</color>
+    <color name="splash_wordmark">#404042</color>
 </resources>
