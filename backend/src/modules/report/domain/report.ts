@@ -132,7 +132,7 @@ export function validateContent(
       });
     }
     if (item.sizeBytes > context.maxFileBytes) {
-      details.push({ field: `attachments.${i}.size_bytes`, issue: 'max', message: 'Ukuran berkas maksimal 10 MB' });
+      details.push({ field: `attachments.${i}.size_bytes`, issue: 'max', message: `Ukuran berkas maksimal ${context.maxFileBytes / 1_048_576} MB` });
     }
   });
 

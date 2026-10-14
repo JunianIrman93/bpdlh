@@ -16,7 +16,7 @@ const schema = z
     ACCESS_TTL_SECONDS: positiveInt.default(300),
     DEVICE_KEY_TTL_SECONDS: positiveInt.default(2_592_000),
     NONCE_TTL_SECONDS: positiveInt.default(60),
-    MAX_UPLOAD_BYTES: positiveInt.default(10_485_760),
+    MAX_UPLOAD_BYTES: positiveInt.default(2_097_152),
     STORAGE_DRIVER: z.enum(['disk', 's3']).default('disk'),
     STORAGE_DISK_PATH: z.string().default('/data/files'),
     S3_ENDPOINT: z.url().optional(),

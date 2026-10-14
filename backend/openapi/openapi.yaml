@@ -297,7 +297,7 @@ paths:
       description: |-
         Server memvalidasi berurutan sebelum menyimpan:
         1. Laporan ada dan milik pengguna; lampiran terdaftar pada manifes.
-        2. Ukuran sama dengan size_bytes pada manifes dan tidak melebihi 10 MB.
+        2. Ukuran sama dengan size_bytes pada manifes dan tidak melebihi 2 MB.
         3. Tipe berkas, ditentukan dari isi, sama dengan mime_type manifes dan
            termasuk daftar yang diizinkan.
         4. SHA-256 yang dihitung server sama dengan sha256 manifes.
@@ -686,7 +686,7 @@ components:
         size_bytes:
           type: integer
           minimum: 1
-          maximum: 10485760
+          maximum: 2097152
         sha256:
           type: string
           pattern: '^[0-9a-fA-F]{64}$'
