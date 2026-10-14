@@ -55,6 +55,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -96,6 +97,7 @@ fun ReportListRoute(
         uiState = uiState,
         onFilterChange = viewModel::onFilterChange,
         onRefresh = viewModel::refresh,
+        onLoadMore = viewModel::loadMore,
         onCreateReport = onCreateReport,
         onOpenAccount = onOpenAccount,
         onOpenReport = onOpenReport,
@@ -108,12 +110,23 @@ private fun ReportListScreen(
     uiState: ReportListUiState,
     onFilterChange: (ReportStatus?) -> Unit,
     onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
     onCreateReport: () -> Unit,
     onOpenAccount: () -> Unit,
     onOpenReport: (Report) -> Unit,
 ) {
     val listState = rememberLazyListState()
     val fabExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+    val nearEnd by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
+            last >= info.totalItemsCount - LOAD_MORE_THRESHOLD
+        }
+    }
+    LaunchedEffect(nearEnd, uiState.hasMore, uiState.reports.size) {
+        if (nearEnd && uiState.hasMore) onLoadMore()
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -226,6 +239,7 @@ private enum class ListContent {
 }
 
 private const val SKELETON_CARD_COUNT = 5
+private const val LOAD_MORE_THRESHOLD = 3
 private const val SHIMMER_DURATION_MS = 1200
 
 @Composable

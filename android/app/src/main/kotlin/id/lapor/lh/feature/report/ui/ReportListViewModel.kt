@@ -15,16 +15,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 private const val SYNC_START_TIMEOUT_MS = 5_000L
 private const val SYNC_FINISH_TIMEOUT_MS = 60_000L
+private const val PAGE_SIZE = 10
 
 data class ReportListUiState(
     val userName: String? = null,
     val reports: List<Report> = emptyList(),
+    val hasMore: Boolean = false,
     val filter: ReportStatus? = null,
     val hasAnyReport: Boolean = false,
     val pendingCount: Int = 0,
@@ -50,6 +53,8 @@ class ReportListViewModel
         private val syncRepository: SyncRepository,
     ) : ViewModel() {
         private val filter = MutableStateFlow<ReportStatus?>(null)
+        private val limit = MutableStateFlow(PAGE_SIZE)
+        private val window = combine(filter, limit, ::Pair)
         private val refreshing = MutableStateFlow(false)
         private val awaitingFirstSync = MutableStateFlow(true)
         private val syncStatus =
@@ -73,14 +78,16 @@ class ReportListViewModel
             combine(
                 reportRepository.observeReports(),
                 authRepository.observeCurrentUser(),
-                filter,
+                window,
                 loadSignals,
                 refreshing,
-            ) { reports, user, selected, signals, isRefreshing ->
+            ) { reports, user, (selected, shownCount), signals, isRefreshing ->
                 val sync = signals.sync
+                val filtered = if (selected == null) reports else reports.filter { it.status == selected }
                 ReportListUiState(
                     userName = user?.fullName,
-                    reports = if (selected == null) reports else reports.filter { it.status == selected },
+                    reports = filtered.take(shownCount),
+                    hasMore = filtered.size > shownCount,
                     filter = selected,
                     hasAnyReport = reports.isNotEmpty(),
                     pendingCount = reports.count { it.status == ReportStatus.WAITING_NETWORK || it.status == ReportStatus.SYNCING },
@@ -98,6 +105,11 @@ class ReportListViewModel
 
         fun onFilterChange(status: ReportStatus?) {
             filter.value = status
+            limit.value = PAGE_SIZE
+        }
+
+        fun loadMore() {
+            if (uiState.value.hasMore) limit.update { it + PAGE_SIZE }
         }
 
         fun refresh() {
