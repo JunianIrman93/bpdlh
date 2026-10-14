@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -22,6 +23,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -122,8 +124,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
 
-private val documentMimeTypes = ReportRules.mimeTypesByKind.getValue(AttachmentKind.DOCUMENT).toTypedArray()
-private val fileMimeTypes = arrayOf("text/plain", "text/csv", "text/comma-separated-values")
+private val documentMimeTypes = (ReportRules.documentMimeTypes + "text/comma-separated-values").toTypedArray()
 
 @Composable
 fun ReportFormRoute(
@@ -172,10 +173,6 @@ fun ReportFormRoute(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { viewModel.addAttachment(AttachmentKind.DOCUMENT, it.toString()) }
         }
-    val file =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let { viewModel.addAttachment(AttachmentKind.FILE, it.toString()) }
-        }
     val locationPermission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
             viewModel.onLocationPermissionResult(result[Manifest.permission.ACCESS_FINE_LOCATION] == true)
@@ -204,7 +201,6 @@ fun ReportFormRoute(
                 onTakePhoto = { camera.launch(Uri.parse(viewModel.newCameraUri())) },
                 onPickImage = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                 onPickDocument = { document.launch(documentMimeTypes) },
-                onPickFile = { file.launch(fileMimeTypes) },
                 onRemoveAttachment = viewModel::removeAttachment,
                 onSaveDraft = viewModel::saveAndExit,
                 onSubmit = viewModel::submit,
@@ -227,7 +223,6 @@ private class ReportFormActions(
     val onTakePhoto: () -> Unit,
     val onPickImage: () -> Unit,
     val onPickDocument: () -> Unit,
-    val onPickFile: () -> Unit,
     val onRemoveAttachment: (String) -> Unit,
     val onSaveDraft: () -> Unit,
     val onSubmit: () -> Unit,
@@ -403,19 +398,21 @@ private fun CategoryField(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CategorySheet(
-    selected: Category?,
-    onSelect: (Category) -> Unit,
+private fun FormSheet(
+    title: String,
     onClose: () -> Unit,
+    content: @Composable ColumnScope.(dismiss: (then: () -> Unit) -> Unit) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager.current
     val windowHeight = LocalWindowInfo.current.containerSize.height
-    val maxHeight = with(LocalDensity.current) { windowHeight.toDp() } * CATEGORY_SHEET_MAX_FRACTION
-    var query by rememberSaveable { mutableStateOf("") }
-    val labels = Category.entries.associateWith { stringResource(it.labelRes()) }
-    val matches = Category.entries.filter { labels.getValue(it).contains(query.trim(), ignoreCase = true) }
+    val maxHeight = with(LocalDensity.current) { windowHeight.toDp() } * SHEET_MAX_FRACTION
+    val dismiss: (() -> Unit) -> Unit = { then ->
+        scope.launch { sheetState.hide() }.invokeOnCompletion {
+            onClose()
+            then()
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = sheetState,
@@ -434,71 +431,86 @@ private fun CategorySheet(
         ) {
             BottomSheetDefaults.DragHandle(modifier = Modifier.align(Alignment.CenterHorizontally))
             Text(
-                text = stringResource(R.string.form_field_category),
+                text = title,
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text(stringResource(R.string.form_category_search)) },
-                leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { query = "" }) {
-                            Icon(
-                                painterResource(R.drawable.ic_close),
-                                contentDescription = stringResource(R.string.form_category_search_clear),
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                shape = MaterialTheme.shapes.large,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
-            )
-            if (matches.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.form_category_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                )
-            }
-            LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
-                items(matches, key = { it.name }) { category ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = selected == category,
-                                    role = Role.RadioButton,
-                                    onClick = {
-                                        onSelect(category)
-                                        scope.launch { sheetState.hide() }.invokeOnCompletion { onClose() }
-                                    },
-                                ).padding(horizontal = 24.dp, vertical = 8.dp),
-                    ) {
-                        CategoryTile(category = category, size = 40.dp)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = labels.getValue(category),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.weight(1f),
+            content(dismiss)
+        }
+    }
+}
+
+private const val SHEET_MAX_FRACTION = 0.75f
+
+@Composable
+private fun CategorySheet(
+    selected: Category?,
+    onSelect: (Category) -> Unit,
+    onClose: () -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+    var query by rememberSaveable { mutableStateOf("") }
+    val labels = Category.entries.associateWith { stringResource(it.labelRes()) }
+    val matches = Category.entries.filter { labels.getValue(it).contains(query.trim(), ignoreCase = true) }
+    FormSheet(title = stringResource(R.string.form_field_category), onClose = onClose) { dismiss ->
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = { Text(stringResource(R.string.form_category_search)) },
+            leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { query = "" }) {
+                        Icon(
+                            painterResource(R.drawable.ic_close),
+                            contentDescription = stringResource(R.string.form_category_search_clear),
                         )
-                        RadioButton(selected = selected == category, onClick = null)
                     }
+                }
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+        )
+        if (matches.isEmpty()) {
+            Text(
+                text = stringResource(R.string.form_category_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            )
+        }
+        LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+            items(matches, key = { it.name }) { category ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = selected == category,
+                                role = Role.RadioButton,
+                                onClick = {
+                                    onSelect(category)
+                                    dismiss {}
+                                },
+                            ).padding(horizontal = 24.dp, vertical = 8.dp),
+                ) {
+                    CategoryTile(category = category, size = 40.dp)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = labels.getValue(category),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    RadioButton(selected = selected == category, onClick = null)
                 }
             }
         }
     }
 }
-
-private const val CATEGORY_SHEET_MAX_FRACTION = 0.75f
 
 @Composable
 private fun DateField(
@@ -766,6 +778,8 @@ private fun AttachmentSection(
     val context = LocalContext.current
     val error = uiState.errors[ReportField.ATTACHMENTS]
     val canAdd = !uiState.isAddingAttachment && uiState.attachments.size < ReportRules.MAX_ATTACHMENTS
+    var showOptions by rememberSaveable { mutableStateOf(false) }
+    if (showOptions) AttachmentSheet(actions = actions, onClose = { showOptions = false })
     SectionCard(title = stringResource(R.string.form_section_attachments), isError = error != null, icon = R.drawable.ic_file) {
         Text(
             text =
@@ -779,19 +793,15 @@ private fun AttachmentSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         AnimatedNotice(text = error?.let { stringResource(it.messageRes()) })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AttachButton(stringResource(R.string.form_attach_photo), R.drawable.ic_camera, canAdd, actions.onTakePhoto, Modifier.weight(1f))
-            AttachButton(stringResource(R.string.form_attach_image), R.drawable.ic_image, canAdd, actions.onPickImage, Modifier.weight(1f))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AttachButton(
-                stringResource(R.string.form_attach_document),
-                R.drawable.ic_document,
-                canAdd,
-                actions.onPickDocument,
-                Modifier.weight(1f),
-            )
-            AttachButton(stringResource(R.string.form_attach_file), R.drawable.ic_file, canAdd, actions.onPickFile, Modifier.weight(1f))
+        FilledTonalButton(
+            onClick = { showOptions = true },
+            enabled = canAdd,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+        ) {
+            Icon(painterResource(R.drawable.ic_add), contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.form_attach_add))
         }
         if (uiState.isAddingAttachment) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -807,23 +817,58 @@ private fun AttachmentSection(
 }
 
 @Composable
-private fun AttachButton(
-    label: String,
-    @DrawableRes icon: Int,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier,
+private fun AttachmentSheet(
+    actions: ReportFormActions,
+    onClose: () -> Unit,
 ) {
-    FilledTonalButton(
-        onClick = onClick,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.medium,
-        contentPadding = PaddingValues(horizontal = 12.dp),
-        modifier = modifier.height(52.dp),
+    FormSheet(title = stringResource(R.string.form_attach_add), onClose = onClose) { dismiss ->
+        Spacer(modifier = Modifier.height(8.dp))
+        AttachmentOption(R.drawable.ic_camera, R.string.form_attach_photo, R.string.form_attach_photo_hint) {
+            dismiss(actions.onTakePhoto)
+        }
+        AttachmentOption(R.drawable.ic_image, R.string.form_attach_image, R.string.form_attach_image_hint) {
+            dismiss(actions.onPickImage)
+        }
+        AttachmentOption(R.drawable.ic_document, R.string.form_attach_document, R.string.form_attach_document_hint) {
+            dismiss(actions.onPickDocument)
+        }
+    }
+}
+
+@Composable
+private fun AttachmentOption(
+    @DrawableRes icon: Int,
+    @StringRes title: Int,
+    @StringRes hint: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 10.dp),
     ) {
-        Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Surface(
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.size(44.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(22.dp))
+            }
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(title), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = stringResource(hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

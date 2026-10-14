@@ -85,11 +85,14 @@
     <string name="form_attach_photo">Kamera</string>
     <string name="form_attach_image">Galeri</string>
     <string name="form_attach_document">Dokumen</string>
-    <string name="form_attach_file">Berkas</string>
+    <string name="form_attach_add">Tambah lampiran</string>
+    <string name="form_attach_photo_hint">Ambil foto langsung dengan kamera</string>
+    <string name="form_attach_image_hint">Pilih gambar dari galeri</string>
+    <string name="form_attach_document_hint">PDF, Word, Excel, TXT, atau CSV</string>
     <string name="form_attachment_saving">Menyimpan lampiran</string>
     <string name="form_attachment_remove_description">Hapus lampiran %1$s</string>
     <string name="form_attachment_too_many">Maksimal 10 lampiran per laporan.</string>
-    <string name="form_attachment_unsupported">Tipe berkas tidak didukung. Dokumen: PDF, DOCX, XLSX. Berkas: TXT, CSV.</string>
+    <string name="form_attachment_unsupported">Tipe berkas tidak didukung. Pilih PDF, DOCX, XLSX, TXT, atau CSV.</string>
     <string name="form_attachment_too_large">Ukuran berkas maksimal 2 MB.</string>
     <string name="form_attachment_total_too_large">Total ukuran lampiran maksimal 30 MB.</string>
     <string name="form_attachment_failed">Lampiran gagal disimpan. Coba lagi.</string>
