@@ -580,10 +580,14 @@ private fun DateSheet(
             )
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
         ) {
-            TextButton(onClick = { dismiss {} }, modifier = Modifier.height(48.dp)) {
+            OutlinedButton(
+                onClick = { dismiss {} },
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.weight(1f).height(48.dp),
+            ) {
                 Text(stringResource(R.string.action_cancel))
             }
             Button(
@@ -592,7 +596,7 @@ private fun DateSheet(
                     dismiss {}
                 },
                 shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.height(48.dp),
+                modifier = Modifier.weight(1f).height(48.dp),
             ) {
                 Text(stringResource(R.string.form_date_choose))
             }
