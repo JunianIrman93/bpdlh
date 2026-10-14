@@ -177,13 +177,7 @@ fun ReportFormRoute(
         }
     val locationPermission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-            if (result[Manifest.permission.ACCESS_FINE_LOCATION] ==
-                true
-            ) {
-                viewModel.captureLocation()
-            } else {
-                viewModel.onLocationPermissionDenied()
-            }
+            viewModel.onLocationPermissionResult(result[Manifest.permission.ACCESS_FINE_LOCATION] == true)
         }
 
     ReportFormScreen(
@@ -197,7 +191,9 @@ fun ReportFormRoute(
                 onCategoryChange = viewModel::onCategoryChange,
                 onActivityDateChange = viewModel::onActivityDateChange,
                 onCaptureLocation = { viewModel.captureLocation() },
-                onRequestLocationPermission = {
+                onAutoLocation = viewModel::onAutoLocation,
+                onRequestLocationPermission = { auto ->
+                    viewModel.onLocationPermissionRequested(auto)
                     locationPermission.launch(
                         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
                     )
@@ -223,7 +219,8 @@ private class ReportFormActions(
     val onCategoryChange: (Category) -> Unit,
     val onActivityDateChange: (LocalDate) -> Unit,
     val onCaptureLocation: () -> Unit,
-    val onRequestLocationPermission: () -> Unit,
+    val onAutoLocation: (Boolean) -> Unit,
+    val onRequestLocationPermission: (Boolean) -> Unit,
     val onOpenAppSettings: () -> Unit,
     val onOpenLocationSettings: () -> Unit,
     val onTakePhoto: () -> Unit,
@@ -621,7 +618,18 @@ private fun LocationSection(
 ) {
     val context = LocalContext.current
     var showRationale by rememberSaveable { mutableStateOf(false) }
+    var rationaleIsAuto by rememberSaveable { mutableStateOf(false) }
     val location = uiState.draft.location
+    LaunchedEffect(uiState.autoLocationPending) {
+        if (uiState.autoLocationPending) {
+            val granted = context.hasFineLocation()
+            actions.onAutoLocation(granted)
+            if (!granted) {
+                rationaleIsAuto = true
+                showRationale = true
+            }
+        }
+    }
     val error = uiState.errors[ReportField.LOCATION]
     SectionCard(title = stringResource(R.string.form_section_location), isError = error != null, icon = R.drawable.ic_location) {
         if (location != null) LocationDetails(location)
@@ -635,7 +643,12 @@ private fun LocationSection(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             FilledTonalButton(
                 onClick = {
-                    if (context.hasFineLocation()) actions.onCaptureLocation() else showRationale = true
+                    if (context.hasFineLocation()) {
+                        actions.onCaptureLocation()
+                    } else {
+                        rationaleIsAuto = false
+                        showRationale = true
+                    }
                 },
                 enabled = !uiState.isLocating,
                 shape = MaterialTheme.shapes.medium,
@@ -674,7 +687,7 @@ private fun LocationSection(
             confirmButton = {
                 TextButton(onClick = {
                     showRationale = false
-                    actions.onRequestLocationPermission()
+                    actions.onRequestLocationPermission(rationaleIsAuto)
                 }) { Text(stringResource(R.string.action_continue)) }
             },
             dismissButton = { TextButton(onClick = { showRationale = false }) { Text(stringResource(R.string.action_cancel)) } },

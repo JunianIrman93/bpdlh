@@ -16,6 +16,7 @@ import id.lapor.lh.feature.report.domain.LocationResult
 import id.lapor.lh.feature.report.domain.ReportDraft
 import id.lapor.lh.feature.report.domain.ReportError
 import id.lapor.lh.feature.report.domain.ReportField
+import id.lapor.lh.feature.report.domain.ReportLocation
 import id.lapor.lh.feature.report.domain.ReportRepository
 import id.lapor.lh.feature.report.domain.ReportRules
 import id.lapor.lh.feature.report.domain.SyncState
@@ -46,6 +47,7 @@ data class ReportFormUiState(
     val errors: Map<ReportField, ReportError> = emptyMap(),
     val isLocating: Boolean = false,
     val locationProblem: LocationProblem? = null,
+    val autoLocationPending: Boolean = false,
     val isAddingAttachment: Boolean = false,
     val isBusy: Boolean = false,
 )
@@ -81,6 +83,8 @@ class ReportFormViewModel
 
         private var deleted = false
         private var prefilledDate: LocalDate? = null
+        private var prefilledLocation: ReportLocation? = null
+        private var permissionRequestIsAuto = false
 
         init {
             viewModelScope.launch {
@@ -94,7 +98,13 @@ class ReportFormViewModel
                         ?: _uiState.value.draft.copy(activityDate = ReportRules.today(System.currentTimeMillis()))
                 prefilledDate = if (existing == null) draft.activityDate else null
                 _uiState.update {
-                    it.copy(draft = draft, isNew = existing == null, isExisting = existing != null, isLoaded = true)
+                    it.copy(
+                        draft = draft,
+                        isNew = existing == null,
+                        isExisting = existing != null,
+                        isLoaded = true,
+                        autoLocationPending = existing == null,
+                    )
                 }
                 repository.observeReport(reportId).collect { report ->
                     _uiState.update { it.copy(attachments = report?.attachments.orEmpty(), isExisting = report != null) }
@@ -110,7 +120,12 @@ class ReportFormViewModel
 
         fun onActivityDateChange(value: LocalDate) = edit(ReportField.ACTIVITY_DATE) { copy(activityDate = value) }
 
-        fun captureLocation() {
+        fun onAutoLocation(permissionGranted: Boolean) {
+            _uiState.update { it.copy(autoLocationPending = false) }
+            if (permissionGranted) captureLocation(auto = true)
+        }
+
+        fun captureLocation(auto: Boolean = false) {
             if (_uiState.value.isLocating) return
             _uiState.update { it.copy(isLocating = true, locationProblem = null) }
             viewModelScope.launch {
@@ -118,6 +133,7 @@ class ReportFormViewModel
                 _uiState.update { state ->
                     when (result) {
                         is LocationResult.Found -> {
+                            if (auto) prefilledLocation = result.location
                             state.copy(
                                 isLocating = false,
                                 draft = state.draft.copy(location = result.location),
@@ -141,8 +157,17 @@ class ReportFormViewModel
             }
         }
 
-        fun onLocationPermissionDenied() {
-            _uiState.update { it.copy(locationProblem = LocationProblem.DENIED) }
+        fun onLocationPermissionRequested(auto: Boolean) {
+            permissionRequestIsAuto = auto
+        }
+
+        fun onLocationPermissionResult(granted: Boolean) {
+            if (granted) {
+                captureLocation(auto = permissionRequestIsAuto)
+            } else {
+                _uiState.update { it.copy(locationProblem = LocationProblem.DENIED) }
+            }
+            permissionRequestIsAuto = false
         }
 
         fun newCameraUri(): String = repository.newCameraCaptureUri().also { savedStateHandle[CAMERA_URI_KEY] = it }
@@ -179,7 +204,7 @@ class ReportFormViewModel
         }
 
         fun saveDraft() {
-            if (deleted || !_uiState.value.hasContent(prefilledDate)) return
+            if (deleted || !_uiState.value.hasContent(prefilledDate, prefilledLocation)) return
             viewModelScope.launch { repository.saveDraft(_uiState.value.draft) }
         }
 
@@ -187,7 +212,7 @@ class ReportFormViewModel
             if (_uiState.value.isBusy) return
             _uiState.update { it.copy(isBusy = true) }
             viewModelScope.launch {
-                if (!deleted && _uiState.value.hasContent(prefilledDate)) repository.saveDraft(_uiState.value.draft)
+                if (!deleted && _uiState.value.hasContent(prefilledDate, prefilledLocation)) repository.saveDraft(_uiState.value.draft)
                 events.send(ReportFormEvent.Exit)
             }
         }
@@ -220,11 +245,14 @@ class ReportFormViewModel
         }
     }
 
-private fun ReportFormUiState.hasContent(prefilledDate: LocalDate?): Boolean =
+private fun ReportFormUiState.hasContent(
+    prefilledDate: LocalDate?,
+    prefilledLocation: ReportLocation?,
+): Boolean =
     isExisting ||
         attachments.isNotEmpty() ||
         draft.title.isNotBlank() ||
         draft.description.isNotBlank() ||
         draft.category != null ||
         (draft.activityDate != null && draft.activityDate != prefilledDate) ||
-        draft.location != null
+        (draft.location != null && draft.location != prefilledLocation)
