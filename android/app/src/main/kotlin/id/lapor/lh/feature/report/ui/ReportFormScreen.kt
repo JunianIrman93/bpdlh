@@ -674,14 +674,19 @@ private fun LocationSection(
         title = stringResource(R.string.form_section_location),
         isError = error != null,
         icon = R.drawable.ic_location,
-        action =
-            if (location != null) {
-                { RetakeLocationAction(isLocating = uiState.isLocating, onClick = requestLocation) }
-            } else {
-                null
-            },
+        action = {
+            RetakeLocationAction(
+                isLocating = uiState.isLocating,
+                description = stringResource(if (location == null) R.string.form_location_capture else R.string.form_location_retake),
+                onClick = requestLocation,
+            )
+        },
     ) {
-        if (location != null) LocationDetails(location)
+        when {
+            location != null -> LocationDetails(location)
+            uiState.isLocating -> Notice(stringResource(R.string.form_location_searching_notice), isError = false)
+            uiState.locationProblem == null && error == null -> Notice(stringResource(R.string.form_location_empty), isError = false)
+        }
         when (uiState.locationProblem) {
             LocationProblem.DENIED -> Notice(stringResource(R.string.form_location_denied), isError = true)
             LocationProblem.DISABLED -> Notice(stringResource(R.string.form_location_disabled), isError = true)
@@ -695,30 +700,8 @@ private fun LocationSection(
                 LocationProblem.DISABLED -> actions.onOpenLocationSettings
                 else -> null
             }
-        if (location == null || settingsAction != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (location == null) {
-                    FilledTonalButton(
-                        onClick = requestLocation,
-                        enabled = !uiState.isLocating,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.height(48.dp),
-                    ) {
-                        if (uiState.isLocating) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.form_location_searching))
-                        } else {
-                            Icon(painterResource(R.drawable.ic_location), contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.form_location_capture))
-                        }
-                    }
-                }
-                if (settingsAction != null) {
-                    TextButton(onClick = settingsAction) { Text(stringResource(R.string.form_open_settings)) }
-                }
-            }
+        if (settingsAction != null) {
+            TextButton(onClick = settingsAction, modifier = Modifier.height(48.dp)) { Text(stringResource(R.string.form_open_settings)) }
         }
     }
     if (showRationale) {
@@ -740,6 +723,7 @@ private fun LocationSection(
 @Composable
 private fun RetakeLocationAction(
     isLocating: Boolean,
+    description: String,
     onClick: () -> Unit,
 ) {
     val headerAligned = Modifier.headerAction()
@@ -755,7 +739,7 @@ private fun RetakeLocationAction(
         IconButton(onClick = onClick, modifier = headerAligned) {
             Icon(
                 painterResource(R.drawable.ic_refresh),
-                contentDescription = stringResource(R.string.form_location_retake),
+                contentDescription = description,
                 tint = MaterialTheme.colorScheme.primary,
             )
         }

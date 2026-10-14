@@ -72,6 +72,8 @@
     <string name="form_location_capture">Ambil lokasi</string>
     <string name="form_location_retake">Ambil ulang lokasi</string>
     <string name="form_location_searching">Mencari lokasi</string>
+    <string name="form_location_searching_notice">Mencari lokasi perangkat…</string>
+    <string name="form_location_empty">Lokasi belum diambil. Ketuk ikon muat ulang untuk mengambilnya.</string>
     <string name="form_location_accuracy">Akurasi %1$d m, diambil %2$s</string>
     <string name="form_location_mock">Lokasi tiruan terdeteksi. Tetap dicatat pada laporan.</string>
     <string name="form_location_poor_accuracy">Akurasi lebih dari 100 m. Lokasi tetap bisa dipakai, atau ambil ulang di tempat terbuka.</string>
@@ -79,7 +81,7 @@
     <string name="form_location_disabled">Layanan lokasi mati. Aktifkan lokasi di pengaturan perangkat.</string>
     <string name="form_location_denied">Izin lokasi presisi belum diberikan. Draf tetap bisa disimpan, tetapi lokasi wajib untuk mengirim.</string>
     <string name="form_location_rationale_title">Izin lokasi</string>
-    <string name="form_location_rationale_text">Lokasi dipakai untuk mencatat tempat kegiatan pada laporan. Lokasi diambil sekali saat Anda membuat laporan baru atau menekan Ambil lokasi, tidak dilacak di latar belakang.</string>
+    <string name="form_location_rationale_text">Lokasi dipakai untuk mencatat tempat kegiatan pada laporan. Lokasi diambil sekali saat Anda membuat laporan baru atau saat Anda memintanya ulang, tidak dilacak di latar belakang.</string>
     <string name="form_open_settings">Buka pengaturan</string>
     <string name="form_section_attachments">Lampiran</string>
     <string name="form_attachment_summary">%1$d dari %2$d lampiran, %3$s dari 10 MB</string>
