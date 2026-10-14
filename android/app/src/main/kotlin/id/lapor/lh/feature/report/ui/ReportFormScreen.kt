@@ -51,7 +51,7 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -530,13 +530,13 @@ private fun DateField(
         onClick = { open = true },
     )
     if (open) {
-        DateDialog(uiState.draft.activityDate, onActivityDateChange, onClose = { open = false })
+        DateSheet(uiState.draft.activityDate, onActivityDateChange, onClose = { open = false })
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DateDialog(
+private fun DateSheet(
     selected: LocalDate?,
     onActivityDateChange: (LocalDate) -> Unit,
     onClose: () -> Unit,
@@ -560,37 +560,43 @@ private fun DateDialog(
                     },
             )
         }
-    DatePickerDialog(
-        onDismissRequest = onClose,
-        confirmButton = {
-            TextButton(
+    FormSheet(title = stringResource(R.string.form_date_dialog_title), onClose = onClose) { dismiss ->
+        Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+            DatePicker(
+                state = state,
+                title = null,
+                headline = {
+                    Text(
+                        state.selectedDateMillis
+                            ?.toUtcDate()
+                            ?.display()
+                            .orEmpty(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
+                    )
+                },
+                showModeToggle = false,
+                colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+        ) {
+            TextButton(onClick = { dismiss {} }, modifier = Modifier.height(48.dp)) {
+                Text(stringResource(R.string.action_cancel))
+            }
+            Button(
                 onClick = {
                     state.selectedDateMillis?.let { onActivityDateChange(it.toUtcDate()) }
-                    onClose()
+                    dismiss {}
                 },
-            ) { Text(stringResource(R.string.action_continue)) }
-        },
-        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.action_cancel)) } },
-    ) {
-        DatePicker(
-            state = state,
-            title = {
-                Text(
-                    stringResource(R.string.form_date_dialog_title),
-                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
-                )
-            },
-            headline = {
-                Text(
-                    state.selectedDateMillis
-                        ?.toUtcDate()
-                        ?.display()
-                        .orEmpty(),
-                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp),
-                )
-            },
-            showModeToggle = false,
-        )
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.height(48.dp),
+            ) {
+                Text(stringResource(R.string.form_date_choose))
+            }
+        }
     }
 }
 

@@ -66,6 +66,7 @@
     <string name="form_category_empty">Kategori tidak ditemukan.</string>
     <string name="form_field_date">Tanggal kegiatan</string>
     <string name="form_date_dialog_title">Pilih tanggal kegiatan</string>
+    <string name="form_date_choose">Pilih</string>
     <string name="form_counter">%1$d/%2$d</string>
     <string name="form_section_location">Lokasi</string>
     <string name="form_location_capture">Ambil lokasi</string>
