@@ -156,7 +156,11 @@ private fun AccountScreen(
             }
             SectionCard(title = stringResource(R.string.account_section_appearance), isError = false, icon = R.drawable.ic_appearance) {
                 ThemeModeSelector(selected = uiState.themeMode, onSelect = onThemeModeChange)
-                SecondaryText(stringResource(R.string.theme_system_hint))
+                Text(
+                    text = stringResource(R.string.theme_system_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             SectionCard(title = stringResource(R.string.account_section_app), isError = false, icon = R.drawable.ic_info) {
                 Text(stringResource(R.string.account_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodyLarge)
