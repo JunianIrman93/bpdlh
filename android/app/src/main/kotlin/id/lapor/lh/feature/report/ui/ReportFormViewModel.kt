@@ -17,6 +17,7 @@ import id.lapor.lh.feature.report.domain.ReportDraft
 import id.lapor.lh.feature.report.domain.ReportError
 import id.lapor.lh.feature.report.domain.ReportField
 import id.lapor.lh.feature.report.domain.ReportRepository
+import id.lapor.lh.feature.report.domain.ReportRules
 import id.lapor.lh.feature.report.domain.SyncState
 import id.lapor.lh.navigation.ReportFormDestination
 import kotlinx.coroutines.channels.Channel
@@ -79,6 +80,7 @@ class ReportFormViewModel
         val eventFlow: Flow<ReportFormEvent> = events.receiveAsFlow()
 
         private var deleted = false
+        private var prefilledDate: LocalDate? = null
 
         init {
             viewModelScope.launch {
@@ -87,8 +89,12 @@ class ReportFormViewModel
                     events.send(ReportFormEvent.Exit)
                     return@launch
                 }
+                val draft =
+                    existing?.draft
+                        ?: _uiState.value.draft.copy(activityDate = ReportRules.today(System.currentTimeMillis()))
+                prefilledDate = if (existing == null) draft.activityDate else null
                 _uiState.update {
-                    it.copy(draft = existing?.draft ?: it.draft, isNew = existing == null, isExisting = existing != null, isLoaded = true)
+                    it.copy(draft = draft, isNew = existing == null, isExisting = existing != null, isLoaded = true)
                 }
                 repository.observeReport(reportId).collect { report ->
                     _uiState.update { it.copy(attachments = report?.attachments.orEmpty(), isExisting = report != null) }
@@ -173,7 +179,7 @@ class ReportFormViewModel
         }
 
         fun saveDraft() {
-            if (deleted || !_uiState.value.hasContent()) return
+            if (deleted || !_uiState.value.hasContent(prefilledDate)) return
             viewModelScope.launch { repository.saveDraft(_uiState.value.draft) }
         }
 
@@ -181,7 +187,7 @@ class ReportFormViewModel
             if (_uiState.value.isBusy) return
             _uiState.update { it.copy(isBusy = true) }
             viewModelScope.launch {
-                if (!deleted && _uiState.value.hasContent()) repository.saveDraft(_uiState.value.draft)
+                if (!deleted && _uiState.value.hasContent(prefilledDate)) repository.saveDraft(_uiState.value.draft)
                 events.send(ReportFormEvent.Exit)
             }
         }
@@ -214,11 +220,11 @@ class ReportFormViewModel
         }
     }
 
-private fun ReportFormUiState.hasContent(): Boolean =
+private fun ReportFormUiState.hasContent(prefilledDate: LocalDate?): Boolean =
     isExisting ||
         attachments.isNotEmpty() ||
         draft.title.isNotBlank() ||
         draft.description.isNotBlank() ||
         draft.category != null ||
-        draft.activityDate != null ||
+        (draft.activityDate != null && draft.activityDate != prefilledDate) ||
         draft.location != null
