@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -48,6 +47,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -163,16 +164,24 @@ private fun ReportDetailScreen(
                 ) { Text(report.reviewNote) }
             }
 
+            val serverLoad =
+                when {
+                    !report.isSummaryOnly -> null
+                    detailLoad == DetailLoadState.NETWORK_ERROR || detailLoad == DetailLoadState.FAILED -> detailLoad
+                    else -> DetailLoadState.LOADING
+                }
             AnimatedContent(
-                targetState = report.isSummaryOnly,
+                targetState = serverLoad,
                 transitionSpec = {
                     (fadeIn(LaporLHMotion.effects()) togetherWith fadeOut(LaporLHMotion.effects()))
                         .using(SizeTransform(clip = false) { _, _ -> LaporLHMotion.spatial() })
                 },
                 label = "serverDetail",
-            ) { summaryOnly ->
-                if (summaryOnly) {
-                    ServerDetailCard(state = detailLoad, onReload = onReloadDetail)
+            ) { load ->
+                if (load == DetailLoadState.LOADING) {
+                    DetailSkeleton()
+                } else if (load != null) {
+                    ServerDetailCard(state = load, onReload = onReloadDetail)
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         LocationCard(report = report, snackbar = snackbar)
@@ -234,24 +243,50 @@ private fun ServerDetailCard(
     onReload: () -> Unit,
 ) {
     SectionCard(title = stringResource(R.string.detail_server_title), isError = false, icon = R.drawable.ic_document) {
-        if (state == DetailLoadState.LOADING || state == DetailLoadState.IDLE) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.width(12.dp))
-                Notice(stringResource(R.string.detail_server_loading), isError = false)
-            }
-        } else {
-            val message =
-                if (state == DetailLoadState.NETWORK_ERROR) R.string.detail_server_offline else R.string.detail_server_failed
-            Notice(stringResource(message), isError = false)
-            FilledTonalButton(onClick = onReload, shape = MaterialTheme.shapes.medium, modifier = Modifier.height(48.dp)) {
-                Icon(painterResource(R.drawable.ic_refresh), contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.detail_server_reload))
+        val message =
+            if (state == DetailLoadState.NETWORK_ERROR) R.string.detail_server_offline else R.string.detail_server_failed
+        Notice(stringResource(message), isError = false)
+        FilledTonalButton(onClick = onReload, shape = MaterialTheme.shapes.medium, modifier = Modifier.height(48.dp)) {
+            Icon(painterResource(R.drawable.ic_refresh), contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.detail_server_reload))
+        }
+    }
+}
+
+@Composable
+private fun DetailSkeleton() {
+    val description = stringResource(R.string.detail_server_loading)
+    val brush = shimmerBrush()
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.clearAndSetSemantics { contentDescription = description },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth().height(16.dp))
+            SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth().height(16.dp))
+            SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth(0.6f).height(16.dp))
+        }
+        SectionCard(title = stringResource(R.string.form_section_location), isError = false, icon = R.drawable.ic_location) {
+            SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth(0.55f).height(18.dp))
+            SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth(0.8f).height(14.dp))
+        }
+        SectionCard(title = stringResource(R.string.form_section_attachments), isError = false, icon = R.drawable.ic_file) {
+            repeat(SKELETON_ATTACHMENT_COUNT) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.size(56.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth(0.7f).height(16.dp))
+                        SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.width(56.dp).height(12.dp))
+                    }
+                }
             }
         }
     }
 }
+
+private const val SKELETON_ATTACHMENT_COUNT = 2
 
 @Composable
 private fun LocationCard(

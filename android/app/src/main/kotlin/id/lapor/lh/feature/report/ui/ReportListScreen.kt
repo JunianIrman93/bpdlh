@@ -270,7 +270,7 @@ private fun SkeletonCard(brush: Brush) {
 }
 
 @Composable
-private fun SkeletonBlock(
+internal fun SkeletonBlock(
     brush: Brush,
     shape: Shape,
     modifier: Modifier,
@@ -279,7 +279,7 @@ private fun SkeletonBlock(
 }
 
 @Composable
-private fun shimmerBrush(): Brush {
+internal fun shimmerBrush(): Brush {
     val base = MaterialTheme.colorScheme.surfaceContainerHighest
     val highlight = if (LocalDarkTheme.current) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceBright
     val sweep = with(LocalDensity.current) { 320.dp.toPx() }
