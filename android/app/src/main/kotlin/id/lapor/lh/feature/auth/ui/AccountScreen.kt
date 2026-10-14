@@ -144,7 +144,7 @@ private fun AccountScreen(
                         } else {
                             stringResource(R.string.account_last_sync, lastSyncAt.displayDateTime())
                         },
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
                 SecondaryText(
                     if (uiState.unsentCount > 0) {
