@@ -211,6 +211,7 @@ private fun ReportWithAttachments.toInputDto(): ReportInputDto {
                 accuracyM = r.accuracyM ?: 0f,
                 capturedAt = Instant.ofEpochMilli(r.locationCapturedAt ?: r.clientCreatedAt).toString(),
                 isMock = r.isMockLocation ?: false,
+                address = r.locationAddress,
             ),
         clientCreatedAt = Instant.ofEpochMilli(r.clientCreatedAt).toString(),
         attachments =
@@ -242,6 +243,7 @@ private fun ReportSummaryDto.toEntity(
     accuracyM = null,
     locationCapturedAt = null,
     isMockLocation = null,
+    locationAddress = null,
     syncState = SyncState.SYNCED.name,
     syncAttempts = 0,
     lastError = null,

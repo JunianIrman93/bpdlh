@@ -701,6 +701,7 @@ internal fun LocationDetails(location: ReportLocation) {
         text = String.format(Locale.US, "%.6f, %.6f", location.latitude, location.longitude),
         style = MaterialTheme.typography.titleMedium,
     )
+    location.address?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
     Text(
         text = stringResource(R.string.form_location_accuracy, location.accuracyM.toInt(), location.capturedAt.displayDateTime()),
         style = MaterialTheme.typography.bodyMedium,

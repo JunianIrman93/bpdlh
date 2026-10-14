@@ -21,6 +21,7 @@ data class LocationDto(
     @SerialName("accuracy_m") val accuracyM: Float,
     @SerialName("captured_at") val capturedAt: String,
     @SerialName("is_mock") val isMock: Boolean,
+    val address: String? = null,
 )
 
 @Serializable

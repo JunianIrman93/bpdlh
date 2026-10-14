@@ -43,7 +43,7 @@ interface ReportDao {
         UPDATE reports SET title = :title, description = :description, category = :category,
             activity_date = :activityDate, latitude = :latitude, longitude = :longitude,
             accuracy_m = :accuracyM, location_captured_at = :locationCapturedAt,
-            is_mock_location = :isMockLocation, updated_at = :updatedAt
+            is_mock_location = :isMockLocation, location_address = :locationAddress, updated_at = :updatedAt
         WHERE id = :id AND owner_id = :ownerId AND sync_state = 'DRAFT'
         """,
     )
@@ -59,6 +59,7 @@ interface ReportDao {
         accuracyM: Float?,
         locationCapturedAt: Long?,
         isMockLocation: Boolean?,
+        locationAddress: String?,
         updatedAt: Long,
     ): Int
 
@@ -169,7 +170,7 @@ interface ReportDao {
         """
         UPDATE reports SET description = :description, latitude = :latitude, longitude = :longitude,
             accuracy_m = :accuracyM, location_captured_at = :locationCapturedAt, is_mock_location = :isMockLocation,
-            server_status = :serverStatus, review_note = :reviewNote, server_version = :serverVersion,
+            location_address = :locationAddress, server_status = :serverStatus, review_note = :reviewNote, server_version = :serverVersion,
             client_created_at = :clientCreatedAt, updated_at = MAX(updated_at, :updatedAt)
         WHERE id = :id AND owner_id = :ownerId AND sync_state = 'SYNCED' AND latitude IS NULL
         """,
@@ -183,6 +184,7 @@ interface ReportDao {
         accuracyM: Float,
         locationCapturedAt: Long,
         isMockLocation: Boolean,
+        locationAddress: String?,
         serverStatus: String,
         reviewNote: String?,
         serverVersion: Int,

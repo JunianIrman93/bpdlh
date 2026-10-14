@@ -18,6 +18,7 @@ data class ReportEntity(
     @ColumnInfo(name = "accuracy_m") val accuracyM: Float?,
     @ColumnInfo(name = "location_captured_at") val locationCapturedAt: Long?,
     @ColumnInfo(name = "is_mock_location") val isMockLocation: Boolean?,
+    @ColumnInfo(name = "location_address") val locationAddress: String?,
     @ColumnInfo(name = "sync_state") val syncState: String,
     @ColumnInfo(name = "sync_attempts") val syncAttempts: Int,
     @ColumnInfo(name = "last_error") val lastError: String?,

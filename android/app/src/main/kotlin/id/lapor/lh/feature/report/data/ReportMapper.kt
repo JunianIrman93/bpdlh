@@ -24,6 +24,7 @@ internal fun ReportWithAttachments.toDomain(): Report {
                 accuracyM = report.accuracyM ?: 0f,
                 capturedAt = report.locationCapturedAt ?: 0L,
                 isMock = report.isMockLocation ?: false,
+                address = report.locationAddress,
             )
         } else {
             null

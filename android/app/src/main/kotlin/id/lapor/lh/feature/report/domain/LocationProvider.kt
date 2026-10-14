@@ -14,4 +14,6 @@ sealed interface LocationResult {
 
 interface LocationProvider {
     suspend fun currentLocation(): LocationResult
+
+    suspend fun addressOf(location: ReportLocation): String?
 }

@@ -157,6 +157,7 @@ class ReportRepositoryImpl
                         accuracyM = draft.location?.accuracyM,
                         locationCapturedAt = draft.location?.capturedAt,
                         isMockLocation = draft.location?.isMock,
+                        locationAddress = draft.location?.address,
                         updatedAt = now,
                     )
                 if (updated == 0 && dao.getReport(draft.id, ownerId) == null) {
@@ -313,6 +314,7 @@ class ReportRepositoryImpl
                 accuracyM = detail.location.accuracyM,
                 locationCapturedAt = Instant.parse(detail.location.capturedAt).toEpochMilli(),
                 isMockLocation = detail.location.isMock,
+                locationAddress = detail.location.address,
                 serverStatus = detail.status,
                 reviewNote = detail.reviewNote,
                 serverVersion = detail.version,
@@ -423,6 +425,7 @@ private fun ReportDraft.toNewEntity(
     accuracyM = location?.accuracyM,
     locationCapturedAt = location?.capturedAt,
     isMockLocation = location?.isMock,
+    locationAddress = location?.address,
     syncState = SyncState.DRAFT.name,
     syncAttempts = 0,
     lastError = null,

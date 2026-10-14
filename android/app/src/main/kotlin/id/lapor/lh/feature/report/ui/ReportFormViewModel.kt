@@ -97,6 +97,7 @@ class ReportFormViewModel
                     existing?.draft
                         ?: _uiState.value.draft.copy(activityDate = ReportRules.today(System.currentTimeMillis()))
                 prefilledDate = if (existing == null) draft.activityDate else null
+                draft.location?.takeIf { it.address == null }?.let(::resolveAddress)
                 _uiState.update {
                     it.copy(
                         draft = draft,
@@ -153,6 +154,18 @@ class ReportFormViewModel
                             state.copy(isLocating = false, locationProblem = LocationProblem.TIMEOUT)
                         }
                     }
+                }
+                if (result is LocationResult.Found) resolveAddress(result.location)
+            }
+        }
+
+        private fun resolveAddress(location: ReportLocation) {
+            viewModelScope.launch {
+                val address = locationProvider.addressOf(location) ?: return@launch
+                val resolved = location.copy(address = address)
+                if (prefilledLocation == location) prefilledLocation = resolved
+                _uiState.update { state ->
+                    if (state.draft.location == location) state.copy(draft = state.draft.copy(location = resolved)) else state
                 }
             }
         }

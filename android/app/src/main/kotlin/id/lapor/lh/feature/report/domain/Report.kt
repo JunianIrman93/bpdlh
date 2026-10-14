@@ -58,6 +58,7 @@ data class ReportLocation(
     val accuracyM: Float,
     val capturedAt: Long,
     val isMock: Boolean,
+    val address: String? = null,
 )
 
 data class Attachment(
