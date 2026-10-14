@@ -48,8 +48,14 @@ class AndroidLocationProvider
             if (!LocationManagerCompat.isLocationEnabled(manager)) return LocationResult.Disabled
             val provider =
                 when {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                        manager.hasProvider(LocationManager.FUSED_PROVIDER) &&
+                        manager.isProviderEnabled(LocationManager.FUSED_PROVIDER) -> LocationManager.FUSED_PROVIDER
+
                     manager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
+
                     manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
+
                     else -> return LocationResult.Disabled
                 }
 
