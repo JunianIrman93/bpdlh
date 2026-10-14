@@ -4,12 +4,18 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -54,10 +60,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +80,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.lapor.lh.R
 import id.lapor.lh.core.ui.LaporLHMotion
+import id.lapor.lh.core.ui.LocalDarkTheme
 import id.lapor.lh.feature.report.domain.Report
 import id.lapor.lh.feature.report.domain.ReportStatus
 
@@ -148,42 +162,54 @@ private fun ReportListScreen(
                 onRefresh = onRefresh,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                when {
-                    !uiState.isLoaded -> {
-                        Unit
+                val content =
+                    when {
+                        !uiState.isLoaded || uiState.isInitialLoad -> ListContent.LOADING
+                        uiState.reports.isEmpty() -> ListContent.EMPTY
+                        else -> ListContent.REPORTS
                     }
+                AnimatedContent(
+                    targetState = content,
+                    transitionSpec = { fadeIn(LaporLHMotion.effects()) togetherWith fadeOut(LaporLHMotion.effects()) },
+                    label = "reportListContent",
+                ) { shown ->
+                    when (shown) {
+                        ListContent.LOADING -> {
+                            SkeletonList()
+                        }
 
-                    uiState.reports.isEmpty() -> {
-                        EmptyState(
-                            title =
-                                stringResource(
-                                    if (uiState.hasAnyReport) R.string.reports_empty_filtered_title else R.string.reports_empty_title,
-                                ),
-                            text =
-                                stringResource(
-                                    if (uiState.hasAnyReport) R.string.reports_empty_filtered else R.string.reports_empty,
-                                ),
-                        )
-                    }
+                        ListContent.EMPTY -> {
+                            EmptyState(
+                                title =
+                                    stringResource(
+                                        if (uiState.hasAnyReport) R.string.reports_empty_filtered_title else R.string.reports_empty_title,
+                                    ),
+                                text =
+                                    stringResource(
+                                        if (uiState.hasAnyReport) R.string.reports_empty_filtered else R.string.reports_empty,
+                                    ),
+                            )
+                        }
 
-                    else -> {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            items(uiState.reports, key = { it.id }) { report ->
-                                ReportCard(
-                                    report = report,
-                                    onClick = { onOpenReport(report) },
-                                    modifier =
-                                        Modifier.animateItem(
-                                            fadeInSpec = LaporLHMotion.effects(),
-                                            placementSpec = LaporLHMotion.spatial(),
-                                            fadeOutSpec = LaporLHMotion.effects(),
-                                        ),
-                                )
+                        ListContent.REPORTS -> {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                items(uiState.reports, key = { it.id }) { report ->
+                                    ReportCard(
+                                        report = report,
+                                        onClick = { onOpenReport(report) },
+                                        modifier =
+                                            Modifier.animateItem(
+                                                fadeInSpec = LaporLHMotion.effects(),
+                                                placementSpec = LaporLHMotion.spatial(),
+                                                fadeOutSpec = LaporLHMotion.effects(),
+                                            ),
+                                    )
+                                }
                             }
                         }
                     }
@@ -191,6 +217,85 @@ private fun ReportListScreen(
             }
         }
     }
+}
+
+private enum class ListContent {
+    LOADING,
+    EMPTY,
+    REPORTS,
+}
+
+private const val SKELETON_CARD_COUNT = 5
+private const val SHIMMER_DURATION_MS = 1200
+
+@Composable
+private fun SkeletonList() {
+    val description = stringResource(R.string.reports_loading)
+    val brush = shimmerBrush()
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp)
+                .clearAndSetSemantics { contentDescription = description },
+    ) {
+        repeat(SKELETON_CARD_COUNT) { SkeletonCard(brush) }
+    }
+}
+
+@Composable
+private fun SkeletonCard(brush: Brush) {
+    OutlinedCard(
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                SkeletonBlock(brush, MaterialTheme.shapes.medium, Modifier.size(44.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth(0.75f).height(16.dp))
+                    SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.fillMaxWidth(0.45f).height(12.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.width(88.dp).height(24.dp))
+                Spacer(modifier = Modifier.weight(1f))
+                SkeletonBlock(brush, MaterialTheme.shapes.small, Modifier.width(96.dp).height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkeletonBlock(
+    brush: Brush,
+    shape: Shape,
+    modifier: Modifier,
+) {
+    Box(modifier = modifier.clip(shape).background(brush))
+}
+
+@Composable
+private fun shimmerBrush(): Brush {
+    val base = MaterialTheme.colorScheme.surfaceContainerHighest
+    val highlight = if (LocalDarkTheme.current) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceBright
+    val sweep = with(LocalDensity.current) { 320.dp.toPx() }
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val progress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = SHIMMER_DURATION_MS, easing = LinearEasing)),
+        label = "shimmerProgress",
+    )
+    val start = -sweep + progress * sweep * 4
+    return Brush.linearGradient(
+        colors = listOf(base, highlight, base),
+        start = Offset(start, 0f),
+        end = Offset(start + sweep, sweep / 4),
+    )
 }
 
 private data class BannerState(

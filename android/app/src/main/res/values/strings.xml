@@ -42,6 +42,7 @@
     <string name="reports_greeting">Halo, %1$s</string>
     <string name="reports_new">Buat laporan</string>
     <string name="reports_filter_all">Semua</string>
+    <string name="reports_loading">Memuat laporan</string>
     <string name="reports_empty_title">Belum ada laporan</string>
     <string name="reports_empty">Tekan Buat laporan untuk mencatat kegiatan pertama Anda. Laporan tetap tersimpan meski tanpa sinyal.</string>
     <string name="reports_empty_filtered_title">Tidak ada yang cocok</string>

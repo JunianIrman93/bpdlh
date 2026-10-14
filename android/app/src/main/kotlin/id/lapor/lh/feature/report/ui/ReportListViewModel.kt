@@ -32,6 +32,13 @@ data class ReportListUiState(
     val isSyncing: Boolean = false,
     val isRefreshing: Boolean = false,
     val isLoaded: Boolean = false,
+    val isInitialLoad: Boolean = false,
+)
+
+private data class LoadSignals(
+    val sync: SyncStatus,
+    val lastSyncAt: Long?,
+    val awaitingFirstSync: Boolean,
 )
 
 @HiltViewModel
@@ -44,19 +51,33 @@ class ReportListViewModel
     ) : ViewModel() {
         private val filter = MutableStateFlow<ReportStatus?>(null)
         private val refreshing = MutableStateFlow(false)
+        private val awaitingFirstSync = MutableStateFlow(true)
         private val syncStatus =
             syncRepository
                 .observeStatus()
                 .stateIn(viewModelScope, SharingStarted.Eagerly, SyncStatus(isOnline = true, isSyncing = false))
+        private val loadSignals =
+            combine(syncStatus, syncRepository.observeLastSyncAt(), awaitingFirstSync) { sync, lastSyncAt, awaiting ->
+                LoadSignals(sync, lastSyncAt, awaiting)
+            }
+
+        init {
+            viewModelScope.launch {
+                val started = withTimeoutOrNull(SYNC_START_TIMEOUT_MS) { syncStatus.first { it.isSyncing } }
+                if (started != null) syncStatus.first { !it.isSyncing }
+                awaitingFirstSync.value = false
+            }
+        }
 
         val uiState: StateFlow<ReportListUiState> =
             combine(
                 reportRepository.observeReports(),
                 authRepository.observeCurrentUser(),
                 filter,
-                syncStatus,
+                loadSignals,
                 refreshing,
-            ) { reports, user, selected, sync, isRefreshing ->
+            ) { reports, user, selected, signals, isRefreshing ->
+                val sync = signals.sync
                 ReportListUiState(
                     userName = user?.fullName,
                     reports = if (selected == null) reports else reports.filter { it.status == selected },
@@ -67,6 +88,11 @@ class ReportListViewModel
                     isSyncing = sync.isSyncing,
                     isRefreshing = isRefreshing,
                     isLoaded = true,
+                    isInitialLoad =
+                        reports.isEmpty() &&
+                            signals.lastSyncAt == null &&
+                            sync.isOnline &&
+                            (sync.isSyncing || signals.awaitingFirstSync),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReportListUiState())
 
