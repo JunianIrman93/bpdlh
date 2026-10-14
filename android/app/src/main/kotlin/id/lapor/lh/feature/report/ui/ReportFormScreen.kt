@@ -76,6 +76,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -115,6 +116,7 @@ fun ReportFormRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val resources = LocalResources.current
     val haptics = LocalHapticFeedback.current
 
     LaunchedEffect(viewModel) {
@@ -131,11 +133,11 @@ fun ReportFormRoute(
 
                 ReportFormEvent.Invalid -> {
                     haptics.performHapticFeedback(HapticFeedbackType.Reject)
-                    snackbar.showSnackbar(context.getString(R.string.form_fix_errors))
+                    snackbar.showSnackbar(resources.getString(R.string.form_fix_errors))
                 }
 
                 is ReportFormEvent.Message -> {
-                    snackbar.showSnackbar(context.getString(event.res))
+                    snackbar.showSnackbar(resources.getString(event.res))
                 }
             }
         }
