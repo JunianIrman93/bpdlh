@@ -7,17 +7,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -81,6 +81,10 @@ fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
     )
 }
 
+private const val PHOTO_HEIGHT_FRACTION = 0.42f
+private const val SHEET_MIN_HEIGHT_FRACTION = 0.65f
+private val PHOTO_MIN_PEEK = 96.dp
+
 private val dimmedPhoto = ColorFilter.colorMatrix(ColorMatrix().apply { setToScale(0.7f, 0.7f, 0.7f, 1f) })
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -106,16 +110,17 @@ private fun LoginScreen(
     LaunchedEffect(imeVisible) {
         if (imeVisible) snapshotFlow { scrollState.maxValue }.collect { scrollState.scrollTo(it) }
     }
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        val screenHeight = maxHeight
         Image(
             painter = painterResource(R.drawable.login_header),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             colorFilter = if (LocalDarkTheme.current) dimmedPhoto else null,
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.6f),
+            modifier = Modifier.fillMaxWidth().height(screenHeight * PHOTO_HEIGHT_FRACTION),
         )
-        Column(
-            verticalArrangement = Arrangement.Bottom,
+        BoxWithConstraints(
+            contentAlignment = Alignment.BottomCenter,
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -123,10 +128,11 @@ private fun LoginScreen(
                     .padding(top = 24.dp)
                     .imePadding(),
         ) {
+            val sheetMinHeight = (screenHeight * SHEET_MIN_HEIGHT_FRACTION).coerceAtMost(maxHeight - PHOTO_MIN_PEEK).coerceAtLeast(0.dp)
             Surface(
                 color = MaterialTheme.colorScheme.background,
                 shape = MaterialTheme.shapes.extraLarge.copy(bottomStart = ZeroCornerSize, bottomEnd = ZeroCornerSize),
-                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                modifier = Modifier.fillMaxWidth().heightIn(min = sheetMinHeight),
             ) {
                 Column(
                     modifier =
