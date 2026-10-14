@@ -49,6 +49,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
@@ -299,11 +300,18 @@ private fun ReportFormScreen(
             LocationSection(uiState, actions)
             AttachmentSection(uiState, actions)
             if (uiState.isExisting) {
-                TextButton(
+                OutlinedButton(
                     onClick = { confirmDelete = true },
                     enabled = !uiState.isBusy,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                ) { Text(stringResource(R.string.form_delete_draft), color = MaterialTheme.colorScheme.error) }
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                ) {
+                    Icon(painterResource(R.drawable.ic_delete), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.form_delete_draft))
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
