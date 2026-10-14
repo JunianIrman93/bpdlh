@@ -45,7 +45,7 @@ val OnBluePrimaryContainerDark = Color(0xFFDBE4FF)
 
 val BlueSecondaryDark = Color(0xFF9FC4FF)
 val OnBlueSecondaryDark = Color(0xFF00315C)
-val BlueSecondaryContainerDark = Color(0xFF1D4ED8)
+val BlueSecondaryContainerDark = Color(0xFF2E4A82)
 val OnBlueSecondaryContainerDark = Color(0xFFDCE9FF)
 
 val GreenTertiaryDark = Color(0xFF86EFAC)
