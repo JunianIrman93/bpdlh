@@ -324,7 +324,7 @@ private fun TextFields(
     val titleError = uiState.errors[ReportField.TITLE]
     OutlinedTextField(
         value = draft.title,
-        onValueChange = { if (it.length <= ReportRules.TITLE_MAX) actions.onTitleChange(it) },
+        onValueChange = { if (it.length <= ReportRules.TITLE_MAX || it.length < draft.title.length) actions.onTitleChange(it) },
         label = { Text(stringResource(R.string.form_field_title)) },
         singleLine = true,
         isError = titleError != null,
@@ -340,7 +340,13 @@ private fun TextFields(
     val descriptionError = uiState.errors[ReportField.DESCRIPTION]
     OutlinedTextField(
         value = draft.description,
-        onValueChange = { if (it.length <= ReportRules.DESCRIPTION_MAX) actions.onDescriptionChange(it) },
+        onValueChange = {
+            if (it.length <= ReportRules.DESCRIPTION_MAX ||
+                it.length < draft.description.length
+            ) {
+                actions.onDescriptionChange(it)
+            }
+        },
         label = { Text(stringResource(R.string.form_field_description)) },
         minLines = 4,
         isError = descriptionError != null,

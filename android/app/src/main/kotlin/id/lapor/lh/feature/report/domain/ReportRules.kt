@@ -35,9 +35,9 @@ enum class AttachmentError {
 
 object ReportRules {
     const val TITLE_MIN = 5
-    const val TITLE_MAX = 120
+    const val TITLE_MAX = 100
     const val DESCRIPTION_MIN = 20
-    const val DESCRIPTION_MAX = 2000
+    const val DESCRIPTION_MAX = 500
     const val MAX_ACTIVITY_AGE_DAYS = 90L
     const val MAX_ATTACHMENTS = 10
     const val MAX_FILE_BYTES = 10L * 1024 * 1024

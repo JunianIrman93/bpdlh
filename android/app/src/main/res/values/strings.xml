@@ -95,8 +95,8 @@
     <string name="form_delete_draft">Hapus draf</string>
     <string name="form_draft_saved">Draf tersimpan</string>
     <string name="form_fix_errors">Periksa isian yang ditandai.</string>
-    <string name="form_error_title">Judul 5 sampai 120 karakter.</string>
-    <string name="form_error_description">Deskripsi 20 sampai 2000 karakter.</string>
+    <string name="form_error_title">Judul 5 sampai 100 karakter.</string>
+    <string name="form_error_description">Deskripsi 20 sampai 500 karakter.</string>
     <string name="form_error_category">Pilih kategori.</string>
     <string name="form_error_date_required">Pilih tanggal kegiatan.</string>
     <string name="form_error_date_future">Tanggal tidak boleh melebihi hari ini.</string>
