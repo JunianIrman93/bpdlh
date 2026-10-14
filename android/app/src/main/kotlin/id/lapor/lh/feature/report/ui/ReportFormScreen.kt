@@ -12,6 +12,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,8 +72,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -85,6 +92,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import id.lapor.lh.R
+import id.lapor.lh.core.ui.LaporLHMotion
 import id.lapor.lh.feature.report.domain.Attachment
 import id.lapor.lh.feature.report.domain.AttachmentKind
 import id.lapor.lh.feature.report.domain.Category
@@ -107,12 +115,28 @@ fun ReportFormRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
 
     LaunchedEffect(viewModel) {
         viewModel.eventFlow.collect { event ->
             when (event) {
-                ReportFormEvent.Exit -> onExit()
-                is ReportFormEvent.Message -> snackbar.showSnackbar(context.getString(event.res))
+                ReportFormEvent.Exit -> {
+                    onExit()
+                }
+
+                ReportFormEvent.Submitted -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    onExit()
+                }
+
+                ReportFormEvent.Invalid -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.Reject)
+                    snackbar.showSnackbar(context.getString(R.string.form_fix_errors))
+                }
+
+                is ReportFormEvent.Message -> {
+                    snackbar.showSnackbar(context.getString(event.res))
+                }
             }
         }
     }
@@ -509,7 +533,7 @@ private fun LocationSection(
             LocationProblem.TIMEOUT -> Notice(stringResource(R.string.form_location_timeout), isError = true)
             null -> Unit
         }
-        if (error != null && uiState.locationProblem == null) Notice(stringResource(error.messageRes()), isError = true)
+        AnimatedNotice(text = error?.takeIf { uiState.locationProblem == null }?.let { stringResource(it.messageRes()) })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             FilledTonalButton(
                 onClick = {
@@ -595,7 +619,7 @@ private fun AttachmentSection(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (error != null) Notice(stringResource(error.messageRes()), isError = true)
+        AnimatedNotice(text = error?.let { stringResource(it.messageRes()) })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AttachButton(stringResource(R.string.form_attach_photo), R.drawable.ic_camera, canAdd, actions.onTakePhoto, Modifier.weight(1f))
             AttachButton(stringResource(R.string.form_attach_image), R.drawable.ic_image, canAdd, actions.onPickImage, Modifier.weight(1f))
@@ -718,6 +742,19 @@ internal fun SectionCard(
             }
             content()
         }
+    }
+}
+
+@Composable
+private fun AnimatedNotice(text: String?) {
+    AnimatedVisibility(
+        visible = text != null,
+        enter = expandVertically(LaporLHMotion.spatial()) + fadeIn(LaporLHMotion.effects()),
+        exit = shrinkVertically(LaporLHMotion.spatial()) + fadeOut(LaporLHMotion.effects()),
+    ) {
+        var shown by remember { mutableStateOf(text.orEmpty()) }
+        if (text != null) shown = text
+        Notice(shown, isError = true)
     }
 }
 

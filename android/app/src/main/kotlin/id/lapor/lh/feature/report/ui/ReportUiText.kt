@@ -2,6 +2,13 @@ package id.lapor.lh.feature.report.ui
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -24,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import id.lapor.lh.R
+import id.lapor.lh.core.ui.LaporLHMotion
 import id.lapor.lh.feature.report.domain.AttachmentError
 import id.lapor.lh.feature.report.domain.Category
 import id.lapor.lh.feature.report.domain.FailureReason
@@ -133,13 +142,14 @@ fun UploadProgress(
     val total = report.attachments.size
     if (total == 0) return
     val uploaded = report.uploadedCount
+    val progress by animateFloatAsState(uploaded.toFloat() / total, LaporLHMotion.spatial(), label = "uploadProgress")
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = stringResource(R.string.sync_attachment_progress, uploaded, total),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        LinearProgressIndicator(progress = { uploaded.toFloat() / total }, modifier = Modifier.fillMaxWidth())
+        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -157,14 +167,27 @@ fun StatusBadge(
             ReportStatus.SENT -> colors.primaryContainer to colors.onPrimaryContainer
             ReportStatus.VERIFIED -> colors.tertiaryContainer to colors.onTertiaryContainer
         }
-    Surface(color = container, contentColor = content, shape = MaterialTheme.shapes.small, modifier = modifier) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-        ) {
-            Icon(painterResource(status.iconRes()), contentDescription = null, modifier = Modifier.size(14.dp))
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(text = stringResource(status.labelRes()), style = MaterialTheme.typography.labelMedium, maxLines = 1)
+    val animatedContainer by animateColorAsState(container, LaporLHMotion.effects(), label = "badgeContainer")
+    val animatedContent by animateColorAsState(content, LaporLHMotion.effects(), label = "badgeContent")
+    Surface(
+        color = animatedContainer,
+        contentColor = animatedContent,
+        shape = MaterialTheme.shapes.small,
+        modifier = modifier.animateContentSize(LaporLHMotion.spatial()),
+    ) {
+        AnimatedContent(
+            targetState = status,
+            transitionSpec = { fadeIn(LaporLHMotion.effects()) togetherWith fadeOut(LaporLHMotion.effects()) },
+            label = "badgeStatus",
+        ) { shown ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+            ) {
+                Icon(painterResource(shown.iconRes()), contentDescription = null, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = stringResource(shown.labelRes()), style = MaterialTheme.typography.labelMedium, maxLines = 1)
+            }
         }
     }
 }

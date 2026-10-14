@@ -1,6 +1,17 @@
 package id.lapor.lh.feature.report.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,9 +49,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -51,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.lapor.lh.R
+import id.lapor.lh.core.ui.LaporLHMotion
 import id.lapor.lh.feature.report.domain.Report
 import id.lapor.lh.feature.report.domain.ReportStatus
 
@@ -82,6 +98,8 @@ private fun ReportListScreen(
     onOpenAccount: () -> Unit,
     onOpenReport: (Report) -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val fabExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -108,7 +126,13 @@ private fun ReportListScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onCreateReport,
-                icon = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
+                expanded = fabExpanded,
+                icon = {
+                    Icon(
+                        painterResource(R.drawable.ic_add),
+                        contentDescription = if (fabExpanded) null else stringResource(R.string.reports_new),
+                    )
+                },
                 text = { Text(stringResource(R.string.reports_new)) },
             )
         },
@@ -144,12 +168,22 @@ private fun ReportListScreen(
 
                     else -> {
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(uiState.reports, key = { it.id }) { report ->
-                                ReportCard(report = report, onClick = { onOpenReport(report) })
+                                ReportCard(
+                                    report = report,
+                                    onClick = { onOpenReport(report) },
+                                    modifier =
+                                        Modifier.animateItem(
+                                            fadeInSpec = LaporLHMotion.effects(),
+                                            placementSpec = LaporLHMotion.spatial(),
+                                            fadeOutSpec = LaporLHMotion.effects(),
+                                        ),
+                                )
                             }
                         }
                     }
@@ -159,27 +193,61 @@ private fun ReportListScreen(
     }
 }
 
+private data class BannerState(
+    val offline: Boolean,
+    val syncing: Boolean,
+    val pending: Int,
+    val canSyncNow: Boolean,
+)
+
 @Composable
 private fun SyncBanner(
     uiState: ReportListUiState,
     onSyncNow: () -> Unit,
 ) {
     val offline = !uiState.isOnline
-    val pending = uiState.pendingCount
+    val syncing = uiState.isSyncing && !offline
+    val state =
+        if (offline || syncing || uiState.pendingCount > 0) {
+            BannerState(
+                offline = offline,
+                syncing = syncing,
+                pending = uiState.pendingCount,
+                canSyncNow = !offline && !uiState.isSyncing && !uiState.isRefreshing,
+            )
+        } else {
+            null
+        }
+    AnimatedContent(
+        targetState = state,
+        transitionSpec = {
+            (fadeIn(LaporLHMotion.effects()) togetherWith fadeOut(LaporLHMotion.effects()))
+                .using(SizeTransform(clip = false) { _, _ -> LaporLHMotion.spatial() })
+        },
+        contentKey = { it?.copy(pending = 0, canSyncNow = false) },
+        label = "syncBanner",
+    ) { banner ->
+        if (banner != null) BannerContent(banner, onSyncNow)
+    }
+}
+
+@Composable
+private fun BannerContent(
+    banner: BannerState,
+    onSyncNow: () -> Unit,
+) {
     val message =
         when {
-            offline && pending > 0 -> stringResource(R.string.sync_offline_pending, pending)
-            offline -> stringResource(R.string.sync_offline)
-            uiState.isSyncing -> stringResource(R.string.sync_in_progress)
-            pending > 0 -> stringResource(R.string.sync_pending, pending)
-            else -> return
+            banner.offline && banner.pending > 0 -> stringResource(R.string.sync_offline_pending, banner.pending)
+            banner.offline -> stringResource(R.string.sync_offline)
+            banner.syncing -> stringResource(R.string.sync_in_progress)
+            else -> stringResource(R.string.sync_pending, banner.pending)
         }
-    val showSyncNow = !offline && !uiState.isSyncing && !uiState.isRefreshing
     val colors = MaterialTheme.colorScheme
     val (container, content) =
         when {
-            offline -> colors.surfaceContainerHighest to colors.onSurfaceVariant
-            uiState.isSyncing -> colors.primaryContainer to colors.onPrimaryContainer
+            banner.offline -> colors.surfaceContainerHighest to colors.onSurfaceVariant
+            banner.syncing -> colors.primaryContainer to colors.onPrimaryContainer
             else -> colors.secondaryContainer to colors.onSecondaryContainer
         }
     Surface(
@@ -196,7 +264,7 @@ private fun SyncBanner(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.heightIn(min = 52.dp).padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         ) {
-            if (uiState.isSyncing && !offline) {
+            if (banner.syncing) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
@@ -204,14 +272,14 @@ private fun SyncBanner(
                 )
             } else {
                 Icon(
-                    painterResource(if (offline) R.drawable.ic_offline else R.drawable.ic_status_waiting),
+                    painterResource(if (banner.offline) R.drawable.ic_offline else R.drawable.ic_status_waiting),
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Text(text = message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            if (showSyncNow) {
+            if (banner.canSyncNow) {
                 TextButton(onClick = onSyncNow) { Text(stringResource(R.string.sync_now)) }
             }
         }
@@ -255,12 +323,23 @@ private fun FilterRow(
 private fun ReportCard(
     report: Report,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val draft = report.draft
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.98f else 1f, LaporLHMotion.spatial(), label = "cardScale")
     OutlinedCard(
         onClick = onClick,
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth(),
+        interactionSource = interactionSource,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -293,9 +372,12 @@ private fun ReportCard(
                     MetaItem(icon = R.drawable.ic_file, text = report.attachments.size.toString())
                 }
             }
-            if (report.status == ReportStatus.SYNCING) {
-                Spacer(modifier = Modifier.height(12.dp))
-                UploadProgress(report = report)
+            AnimatedVisibility(
+                visible = report.status == ReportStatus.SYNCING,
+                enter = expandVertically(LaporLHMotion.spatial()) + fadeIn(LaporLHMotion.effects()),
+                exit = shrinkVertically(LaporLHMotion.spatial()) + fadeOut(LaporLHMotion.effects()),
+            ) {
+                UploadProgress(report = report, modifier = Modifier.padding(top = 12.dp))
             }
         }
     }

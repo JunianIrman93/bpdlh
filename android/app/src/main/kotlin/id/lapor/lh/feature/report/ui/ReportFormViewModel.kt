@@ -52,6 +52,10 @@ data class ReportFormUiState(
 sealed interface ReportFormEvent {
     data object Exit : ReportFormEvent
 
+    data object Submitted : ReportFormEvent
+
+    data object Invalid : ReportFormEvent
+
     data class Message(
         @StringRes val res: Int,
     ) : ReportFormEvent
@@ -188,11 +192,7 @@ class ReportFormViewModel
             viewModelScope.launch {
                 val errors = repository.submit(_uiState.value.draft)
                 _uiState.update { it.copy(isBusy = false, errors = errors) }
-                if (errors.isEmpty()) {
-                    events.send(ReportFormEvent.Exit)
-                } else {
-                    events.send(ReportFormEvent.Message(R.string.form_fix_errors))
-                }
+                events.send(if (errors.isEmpty()) ReportFormEvent.Submitted else ReportFormEvent.Invalid)
             }
         }
 

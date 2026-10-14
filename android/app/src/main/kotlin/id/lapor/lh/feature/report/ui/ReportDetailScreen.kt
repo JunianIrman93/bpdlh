@@ -4,6 +4,11 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,6 +53,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import id.lapor.lh.R
+import id.lapor.lh.core.ui.LaporLHMotion
 import id.lapor.lh.feature.report.domain.Report
 import id.lapor.lh.feature.report.domain.ReportStatus
 import kotlinx.coroutines.launch
@@ -157,16 +163,26 @@ private fun ReportDetailScreen(
                 ) { Text(report.reviewNote) }
             }
 
-            if (report.isSummaryOnly) {
-                ServerDetailCard(state = detailLoad, onReload = onReloadDetail)
-            } else {
-                LocationCard(report = report, snackbar = snackbar)
-
-                SectionCard(title = stringResource(R.string.form_section_attachments), isError = false, icon = R.drawable.ic_file) {
-                    if (report.attachments.isEmpty()) {
-                        Notice(stringResource(R.string.detail_no_attachments), isError = false)
-                    } else {
-                        report.attachments.forEach { AttachmentRow(attachment = it, onRemove = null) }
+            AnimatedContent(
+                targetState = report.isSummaryOnly,
+                transitionSpec = {
+                    (fadeIn(LaporLHMotion.effects()) togetherWith fadeOut(LaporLHMotion.effects()))
+                        .using(SizeTransform(clip = false) { _, _ -> LaporLHMotion.spatial() })
+                },
+                label = "serverDetail",
+            ) { summaryOnly ->
+                if (summaryOnly) {
+                    ServerDetailCard(state = detailLoad, onReload = onReloadDetail)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        LocationCard(report = report, snackbar = snackbar)
+                        SectionCard(title = stringResource(R.string.form_section_attachments), isError = false, icon = R.drawable.ic_file) {
+                            if (report.attachments.isEmpty()) {
+                                Notice(stringResource(R.string.detail_no_attachments), isError = false)
+                            } else {
+                                report.attachments.forEach { AttachmentRow(attachment = it, onRemove = null) }
+                            }
+                        }
                     }
                 }
             }

@@ -1,15 +1,23 @@
 package id.lapor.lh.feature.auth.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,11 +35,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
@@ -50,6 +61,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import id.lapor.lh.R
+import id.lapor.lh.core.ui.LaporLHMotion
 
 @Composable
 fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
@@ -62,6 +74,7 @@ fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LoginScreen(
     uiState: LoginUiState,
@@ -80,14 +93,19 @@ private fun LoginScreen(
     }
 
     val background = MaterialTheme.colorScheme.background
+    val scrollState = rememberScrollState()
+    val imeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(imeVisible) {
+        if (imeVisible) snapshotFlow { scrollState.maxValue }.collect { scrollState.scrollTo(it) }
+    }
     Surface(modifier = Modifier.fillMaxSize(), color = background) {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .navigationBarsPadding()
-                    .imePadding(),
+                    .imePadding()
+                    .verticalScroll(scrollState),
         ) {
             Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
                 Image(
@@ -166,12 +184,18 @@ private fun LoginScreen(
                     },
                     modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
                 )
-                if (uiState.errorRes != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                AnimatedVisibility(
+                    visible = uiState.errorRes != null,
+                    enter = expandVertically(LaporLHMotion.spatial()) + fadeIn(LaporLHMotion.effects()),
+                    exit = shrinkVertically(LaporLHMotion.spatial()) + fadeOut(LaporLHMotion.effects()),
+                ) {
+                    var shownRes by remember { mutableIntStateOf(uiState.errorRes ?: 0) }
+                    uiState.errorRes?.let { shownRes = it }
                     Text(
-                        text = stringResource(uiState.errorRes),
+                        text = if (shownRes != 0) stringResource(shownRes) else "",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 12.dp),
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
