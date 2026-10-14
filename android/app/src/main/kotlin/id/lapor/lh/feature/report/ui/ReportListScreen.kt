@@ -1,6 +1,6 @@
 package id.lapor.lh.feature.report.ui
 
-import androidx.compose.foundation.clickable
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -128,6 +131,10 @@ private fun ReportListScreen(
 
                     uiState.reports.isEmpty() -> {
                         EmptyState(
+                            title =
+                                stringResource(
+                                    if (uiState.hasAnyReport) R.string.reports_empty_filtered_title else R.string.reports_empty_title,
+                                ),
                             text =
                                 stringResource(
                                     if (uiState.hasAnyReport) R.string.reports_empty_filtered else R.string.reports_empty,
@@ -169,10 +176,16 @@ private fun SyncBanner(
         }
     val showSyncNow = !offline && !uiState.isSyncing && !uiState.isRefreshing
     val colors = MaterialTheme.colorScheme
+    val (container, content) =
+        when {
+            offline -> colors.surfaceContainerHighest to colors.onSurfaceVariant
+            uiState.isSyncing -> colors.primaryContainer to colors.onPrimaryContainer
+            else -> colors.secondaryContainer to colors.onSecondaryContainer
+        }
     Surface(
-        color = if (offline) colors.surfaceVariant else colors.secondaryContainer,
-        contentColor = if (offline) colors.onSurfaceVariant else colors.onSecondaryContainer,
-        shape = MaterialTheme.shapes.small,
+        color = container,
+        contentColor = content,
+        shape = MaterialTheme.shapes.medium,
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -181,16 +194,22 @@ private fun SyncBanner(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.heightIn(min = 48.dp).padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            modifier = Modifier.heightIn(min = 52.dp).padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         ) {
             if (uiState.isSyncing && !offline) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
                     color = LocalContentColor.current,
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+            } else {
+                Icon(
+                    painterResource(if (offline) R.drawable.ic_offline else R.drawable.ic_status_waiting),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
             }
+            Spacer(modifier = Modifier.width(12.dp))
             Text(text = message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             if (showSyncNow) {
                 TextButton(onClick = onSyncNow) { Text(stringResource(R.string.sync_now)) }
@@ -220,6 +239,13 @@ private fun FilterRow(
                 selected = selected == status,
                 onClick = { onFilterChange(status) },
                 label = { Text(stringResource(status.labelRes())) },
+                leadingIcon = {
+                    Icon(
+                        painterResource(status.iconRes()),
+                        contentDescription = null,
+                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                    )
+                },
             )
         }
     }
@@ -231,31 +257,42 @@ private fun ReportCard(
     onClick: () -> Unit,
 ) {
     val draft = report.draft
-    OutlinedCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    OutlinedCard(
+        onClick = onClick,
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {
-                Text(
-                    text = draft.title.ifBlank { stringResource(R.string.reports_untitled) },
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                CategoryTile(category = draft.category, size = 44.dp)
                 Spacer(modifier = Modifier.width(12.dp))
-                StatusBadge(status = report.status)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = draft.title.ifBlank { stringResource(R.string.reports_untitled) },
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = draft.category?.let { stringResource(it.labelRes()) } ?: stringResource(R.string.reports_no_category),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            val details =
-                listOfNotNull(
-                    draft.category?.let { stringResource(it.labelRes()) },
-                    draft.activityDate?.display(),
-                    if (report.isSummaryOnly) null else stringResource(R.string.reports_attachment_count, report.attachments.size),
-                )
-            Text(
-                text = details.joinToString("  ·  "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatusBadge(status = report.status)
+                Spacer(modifier = Modifier.weight(1f))
+                draft.activityDate?.let { MetaItem(icon = R.drawable.ic_calendar, text = it.display()) }
+                if (!report.isSummaryOnly) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    MetaItem(icon = R.drawable.ic_file, text = report.attachments.size.toString())
+                }
+            }
             if (report.status == ReportStatus.SYNCING) {
                 Spacer(modifier = Modifier.height(12.dp))
                 UploadProgress(report = report)
@@ -265,13 +302,50 @@ private fun ReportCard(
 }
 
 @Composable
-private fun EmptyState(text: String) {
+private fun MetaItem(
+    @DrawableRes icon: Int,
+    text: String,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(text = text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun EmptyState(
+    title: String,
+    text: String,
+) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
-            Box(modifier = Modifier.fillParentMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillParentMaxSize().padding(32.dp),
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape,
+                    modifier = Modifier.size(96.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ic_empty), contentDescription = null, modifier = Modifier.size(44.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(text = title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = text,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )

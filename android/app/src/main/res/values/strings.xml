@@ -38,8 +38,11 @@
     <string name="reports_greeting">Halo, %1$s</string>
     <string name="reports_new">Buat laporan</string>
     <string name="reports_filter_all">Semua</string>
-    <string name="reports_empty">Belum ada laporan. Tekan Buat laporan untuk mulai.</string>
+    <string name="reports_empty_title">Belum ada laporan</string>
+    <string name="reports_empty">Tekan Buat laporan untuk mencatat kegiatan pertama Anda. Laporan tetap tersimpan meski tanpa sinyal.</string>
+    <string name="reports_empty_filtered_title">Tidak ada yang cocok</string>
     <string name="reports_empty_filtered">Tidak ada laporan dengan status ini.</string>
+    <string name="reports_no_category">Kategori belum dipilih</string>
     <string name="reports_untitled">Tanpa judul</string>
     <string name="reports_attachment_count">%1$d lampiran</string>
     <string name="sync_offline">Tidak ada jaringan. Laporan tetap tersimpan di ponsel.</string>
@@ -77,7 +80,6 @@
     <string name="form_attach_document">Dokumen</string>
     <string name="form_attach_file">Berkas</string>
     <string name="form_attachment_saving">Menyimpan lampiran</string>
-    <string name="form_attachment_remove">Hapus</string>
     <string name="form_attachment_remove_description">Hapus lampiran %1$s</string>
     <string name="form_attachment_too_many">Maksimal 10 lampiran per laporan.</string>
     <string name="form_attachment_unsupported">Tipe berkas tidak didukung. Dokumen: PDF, DOCX, XLSX. Berkas: TXT, CSV.</string>

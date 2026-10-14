@@ -11,17 +11,20 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,6 +39,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +52,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -208,6 +214,36 @@ private fun ReportFormScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
+        bottomBar = {
+            if (uiState.isLoaded) {
+                Surface(color = MaterialTheme.colorScheme.surface) {
+                    Column {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .navigationBarsPadding()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = actions.onSaveDraft,
+                                enabled = !uiState.isBusy,
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier.weight(1f).height(52.dp),
+                            ) { Text(stringResource(R.string.form_save_draft)) }
+                            Button(
+                                onClick = actions.onSubmit,
+                                enabled = !uiState.isBusy && !uiState.isAddingAttachment && !uiState.isLocating,
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier.weight(1f).height(52.dp),
+                            ) { Text(stringResource(R.string.form_submit)) }
+                        }
+                    }
+                }
+            }
+        },
         snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
@@ -227,20 +263,6 @@ private fun ReportFormScreen(
             DateField(uiState, actions.onActivityDateChange)
             LocationSection(uiState, actions)
             AttachmentSection(uiState, actions)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = actions.onSaveDraft,
-                    enabled = !uiState.isBusy,
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                ) { Text(stringResource(R.string.form_save_draft)) }
-                Button(
-                    onClick = actions.onSubmit,
-                    enabled = !uiState.isBusy && !uiState.isAddingAttachment && !uiState.isLocating,
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                ) { Text(stringResource(R.string.form_submit)) }
-            }
             if (uiState.isExisting) {
                 TextButton(
                     onClick = { confirmDelete = true },
@@ -316,6 +338,7 @@ private fun CategoryField(
     val error = uiState.errors[ReportField.CATEGORY]
     PickerField(
         label = stringResource(R.string.form_field_category),
+        icon = uiState.draft.category.iconRes(),
         value =
             uiState.draft.category
                 ?.let { stringResource(it.labelRes()) }
@@ -366,6 +389,7 @@ private fun DateField(
     val error = uiState.errors[ReportField.ACTIVITY_DATE]
     PickerField(
         label = stringResource(R.string.form_field_date),
+        icon = R.drawable.ic_calendar,
         value =
             uiState.draft.activityDate
                 ?.display()
@@ -441,6 +465,7 @@ private fun DateDialog(
 @Composable
 private fun PickerField(
     label: String,
+    @DrawableRes icon: Int,
     value: String,
     error: String?,
     onClick: () -> Unit,
@@ -452,6 +477,7 @@ private fun PickerField(
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
+            leadingIcon = { Icon(painterResource(icon), contentDescription = null) },
             isError = error != null,
             supportingText = error?.let { { Text(it) } },
             modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
@@ -475,7 +501,7 @@ private fun LocationSection(
     var showRationale by rememberSaveable { mutableStateOf(false) }
     val location = uiState.draft.location
     val error = uiState.errors[ReportField.LOCATION]
-    SectionCard(title = stringResource(R.string.form_section_location), isError = error != null) {
+    SectionCard(title = stringResource(R.string.form_section_location), isError = error != null, icon = R.drawable.ic_location) {
         if (location != null) LocationDetails(location)
         when (uiState.locationProblem) {
             LocationProblem.DENIED -> Notice(stringResource(R.string.form_location_denied), isError = true)
@@ -485,7 +511,7 @@ private fun LocationSection(
         }
         if (error != null && uiState.locationProblem == null) Notice(stringResource(error.messageRes()), isError = true)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = {
                     if (context.hasFineLocation()) actions.onCaptureLocation() else showRationale = true
                 },
@@ -498,6 +524,8 @@ private fun LocationSection(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.form_location_searching))
                 } else {
+                    Icon(painterResource(R.drawable.ic_location), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(if (location == null) R.string.form_location_capture else R.string.form_location_retake))
                 }
             }
@@ -555,7 +583,7 @@ private fun AttachmentSection(
     val context = LocalContext.current
     val error = uiState.errors[ReportField.ATTACHMENTS]
     val canAdd = !uiState.isAddingAttachment && uiState.attachments.size < ReportRules.MAX_ATTACHMENTS
-    SectionCard(title = stringResource(R.string.form_section_attachments), isError = error != null) {
+    SectionCard(title = stringResource(R.string.form_section_attachments), isError = error != null, icon = R.drawable.ic_file) {
         Text(
             text =
                 stringResource(
@@ -569,12 +597,18 @@ private fun AttachmentSection(
         )
         if (error != null) Notice(stringResource(error.messageRes()), isError = true)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AttachButton(stringResource(R.string.form_attach_photo), canAdd, actions.onTakePhoto, Modifier.weight(1f))
-            AttachButton(stringResource(R.string.form_attach_image), canAdd, actions.onPickImage, Modifier.weight(1f))
+            AttachButton(stringResource(R.string.form_attach_photo), R.drawable.ic_camera, canAdd, actions.onTakePhoto, Modifier.weight(1f))
+            AttachButton(stringResource(R.string.form_attach_image), R.drawable.ic_image, canAdd, actions.onPickImage, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AttachButton(stringResource(R.string.form_attach_document), canAdd, actions.onPickDocument, Modifier.weight(1f))
-            AttachButton(stringResource(R.string.form_attach_file), canAdd, actions.onPickFile, Modifier.weight(1f))
+            AttachButton(
+                stringResource(R.string.form_attach_document),
+                R.drawable.ic_document,
+                canAdd,
+                actions.onPickDocument,
+                Modifier.weight(1f),
+            )
+            AttachButton(stringResource(R.string.form_attach_file), R.drawable.ic_file, canAdd, actions.onPickFile, Modifier.weight(1f))
         }
         if (uiState.isAddingAttachment) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -592,16 +626,22 @@ private fun AttachmentSection(
 @Composable
 private fun AttachButton(
     label: String,
+    @DrawableRes icon: Int,
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
-    OutlinedButton(
+    FilledTonalButton(
         onClick = onClick,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
-        modifier = modifier.height(48.dp),
-    ) { Text(label) }
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        modifier = modifier.height(52.dp),
+    ) {
+        Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 @Composable
@@ -611,15 +651,26 @@ internal fun AttachmentRow(
 ) {
     val context = LocalContext.current
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        if (attachment.kind == AttachmentKind.PHOTO || attachment.kind == AttachmentKind.IMAGE) {
+        if (attachment.isImage && attachment.localPath.isNotEmpty()) {
             AsyncImage(
                 model = File(attachment.localPath),
                 contentDescription = attachment.fileName,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(56.dp).clip(MaterialTheme.shapes.small),
             )
-            Spacer(modifier = Modifier.width(12.dp))
+        } else {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.size(56.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(painterResource(attachment.kind.iconRes()), contentDescription = null)
+                }
+            }
         }
+        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(attachment.fileName, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
@@ -630,11 +681,8 @@ internal fun AttachmentRow(
         }
         if (onRemove != null) {
             val description = stringResource(R.string.form_attachment_remove_description, attachment.fileName)
-            TextButton(
-                onClick = onRemove,
-                modifier = Modifier.height(48.dp).semantics { contentDescription = description },
-            ) {
-                Text(stringResource(R.string.form_attachment_remove))
+            IconButton(onClick = onRemove) {
+                Icon(painterResource(R.drawable.ic_close), contentDescription = description)
             }
         }
     }
@@ -644,6 +692,7 @@ internal fun AttachmentRow(
 internal fun SectionCard(
     title: String,
     isError: Boolean,
+    @DrawableRes icon: Int? = null,
     content: @Composable () -> Unit,
 ) {
     OutlinedCard(
@@ -655,7 +704,18 @@ internal fun SectionCard(
             ),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (icon != null) {
+                    Icon(
+                        painterResource(icon),
+                        contentDescription = null,
+                        tint = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(title, style = MaterialTheme.typography.titleMedium)
+            }
             content()
         }
     }
@@ -672,6 +732,18 @@ internal fun Notice(
         color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+internal val Attachment.isImage: Boolean
+    get() = kind == AttachmentKind.PHOTO || kind == AttachmentKind.IMAGE
+
+@DrawableRes
+private fun AttachmentKind.iconRes(): Int =
+    when (this) {
+        AttachmentKind.PHOTO -> R.drawable.ic_camera
+        AttachmentKind.IMAGE -> R.drawable.ic_image
+        AttachmentKind.DOCUMENT -> R.drawable.ic_document
+        AttachmentKind.FILE -> R.drawable.ic_file
+    }
 
 private fun LocalDate.toUtcMillis(): Long = atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
 

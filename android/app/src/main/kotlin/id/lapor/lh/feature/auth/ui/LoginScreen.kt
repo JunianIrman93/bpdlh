@@ -1,20 +1,26 @@
 package id.lapor.lh.feature.auth.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -29,7 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
@@ -69,23 +79,49 @@ private fun LoginScreen(
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box(
-            modifier = Modifier.fillMaxSize().safeDrawingPadding(),
-            contentAlignment = Alignment.Center,
+    val background = MaterialTheme.colorScheme.background
+    Surface(modifier = Modifier.fillMaxSize(), color = background) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .navigationBarsPadding()
+                    .imePadding(),
         ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(24.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
+            Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                Image(
+                    painter = painterResource(R.drawable.login_header),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
                 )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to background)),
+                )
+            }
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(painterResource(R.drawable.ic_splash_check), contentDescription = null, modifier = Modifier.size(28.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.login_subtitle),
@@ -155,6 +191,7 @@ private fun LoginScreen(
                         Text(stringResource(R.string.login_submit))
                     }
                 }
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

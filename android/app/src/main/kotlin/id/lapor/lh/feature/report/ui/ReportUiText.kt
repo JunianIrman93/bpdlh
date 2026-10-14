@@ -1,17 +1,27 @@
 package id.lapor.lh.feature.report.ui
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import id.lapor.lh.R
 import id.lapor.lh.feature.report.domain.AttachmentError
@@ -43,6 +53,29 @@ fun Category.labelRes(): Int =
         Category.ENERGI_TERBARUKAN -> R.string.category_energi_terbarukan
         Category.PEMBERDAYAAN_MASYARAKAT -> R.string.category_pemberdayaan_masyarakat
         Category.LAINNYA -> R.string.category_lainnya
+    }
+
+@DrawableRes
+fun Category?.iconRes(): Int =
+    when (this) {
+        Category.REHABILITASI_HUTAN_LAHAN -> R.drawable.ic_category_forest
+        Category.MANGROVE_PESISIR -> R.drawable.ic_category_water
+        Category.PENGELOLAAN_SAMPAH -> R.drawable.ic_category_recycling
+        Category.ENERGI_TERBARUKAN -> R.drawable.ic_category_energy
+        Category.PEMBERDAYAAN_MASYARAKAT -> R.drawable.ic_category_community
+        Category.LAINNYA, null -> R.drawable.ic_category_other
+    }
+
+@DrawableRes
+fun ReportStatus.iconRes(): Int =
+    when (this) {
+        ReportStatus.DRAFT -> R.drawable.ic_status_draft
+        ReportStatus.WAITING_NETWORK -> R.drawable.ic_status_waiting
+        ReportStatus.SYNCING -> R.drawable.ic_status_syncing
+        ReportStatus.FAILED -> R.drawable.ic_status_failed
+        ReportStatus.SENT -> R.drawable.ic_status_sent
+        ReportStatus.VERIFIED -> R.drawable.ic_status_verified
+        ReportStatus.REJECTED -> R.drawable.ic_status_rejected
     }
 
 @StringRes
@@ -125,10 +158,31 @@ fun StatusBadge(
             ReportStatus.VERIFIED -> colors.tertiaryContainer to colors.onTertiaryContainer
         }
     Surface(color = container, contentColor = content, shape = MaterialTheme.shapes.small, modifier = modifier) {
-        Text(
-            text = stringResource(status.labelRes()),
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 6.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        ) {
+            Icon(painterResource(status.iconRes()), contentDescription = null, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = stringResource(status.labelRes()), style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+fun CategoryTile(
+    category: Category?,
+    size: Dp,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.size(size),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(painterResource(category.iconRes()), contentDescription = null, modifier = Modifier.size(size / 2))
+        }
     }
 }

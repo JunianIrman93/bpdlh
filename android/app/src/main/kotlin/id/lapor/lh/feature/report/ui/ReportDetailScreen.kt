@@ -3,10 +3,12 @@ package id.lapor.lh.feature.report.ui
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,16 +38,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import id.lapor.lh.R
 import id.lapor.lh.feature.report.domain.Report
 import id.lapor.lh.feature.report.domain.ReportStatus
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Locale
 
 @Composable
@@ -104,31 +111,31 @@ private fun ReportDetailScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(verticalAlignment = Alignment.Top) {
-                Text(
-                    text = draft.title.ifBlank { stringResource(R.string.reports_untitled) },
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                StatusBadge(status = report.status)
-            }
-            val details =
-                listOfNotNull(draft.category?.let { stringResource(it.labelRes()) }, draft.activityDate?.display())
-            if (details.isNotEmpty()) {
-                Text(
-                    text = details.joinToString("  ·  "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            val cover = report.attachments.firstOrNull { it.isImage && it.localPath.isNotEmpty() }
+            if (cover != null) {
+                AsyncImage(
+                    model = File(cover.localPath),
+                    contentDescription = cover.fileName,
+                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 10f)
+                            .clip(MaterialTheme.shapes.large),
                 )
             }
+            Header(report = report)
             if (draft.description.isNotBlank()) Text(draft.description, style = MaterialTheme.typography.bodyLarge)
 
             if (report.status == ReportStatus.SYNCING) UploadProgress(report = report)
             if (report.failure != null) {
                 when (report.status) {
                     ReportStatus.FAILED -> {
-                        SectionCard(title = stringResource(R.string.detail_last_error), isError = true) {
+                        SectionCard(
+                            title = stringResource(R.string.detail_last_error),
+                            isError = true,
+                            icon = R.drawable.ic_status_failed,
+                        ) {
                             Text(stringResource(report.failure.messageRes()))
                         }
                     }
@@ -146,6 +153,7 @@ private fun ReportDetailScreen(
                 SectionCard(
                     title = stringResource(R.string.detail_review_note),
                     isError = report.status == ReportStatus.REJECTED,
+                    icon = report.status.iconRes(),
                 ) { Text(report.reviewNote) }
             }
 
@@ -154,7 +162,7 @@ private fun ReportDetailScreen(
             } else {
                 LocationCard(report = report, snackbar = snackbar)
 
-                SectionCard(title = stringResource(R.string.form_section_attachments), isError = false) {
+                SectionCard(title = stringResource(R.string.form_section_attachments), isError = false, icon = R.drawable.ic_file) {
                     if (report.attachments.isEmpty()) {
                         Notice(stringResource(R.string.detail_no_attachments), isError = false)
                     } else {
@@ -170,11 +178,46 @@ private fun ReportDetailScreen(
 }
 
 @Composable
+private fun Header(report: Report) {
+    val draft = report.draft
+    Row(verticalAlignment = Alignment.Top) {
+        CategoryTile(category = draft.category, size = 52.dp)
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = draft.title.ifBlank { stringResource(R.string.reports_untitled) },
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            StatusBadge(status = report.status)
+            draft.category?.let { DetailMeta(icon = it.iconRes(), text = stringResource(it.labelRes())) }
+            draft.activityDate?.let { DetailMeta(icon = R.drawable.ic_calendar, text = it.display()) }
+        }
+    }
+}
+
+@Composable
+private fun DetailMeta(
+    @DrawableRes icon: Int,
+    text: String,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
 private fun ServerDetailCard(
     state: DetailLoadState,
     onReload: () -> Unit,
 ) {
-    SectionCard(title = stringResource(R.string.detail_server_title), isError = false) {
+    SectionCard(title = stringResource(R.string.detail_server_title), isError = false, icon = R.drawable.ic_document) {
         if (state == DetailLoadState.LOADING || state == DetailLoadState.IDLE) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -185,7 +228,9 @@ private fun ServerDetailCard(
             val message =
                 if (state == DetailLoadState.NETWORK_ERROR) R.string.detail_server_offline else R.string.detail_server_failed
             Notice(stringResource(message), isError = false)
-            OutlinedButton(onClick = onReload, shape = MaterialTheme.shapes.medium, modifier = Modifier.height(48.dp)) {
+            FilledTonalButton(onClick = onReload, shape = MaterialTheme.shapes.medium, modifier = Modifier.height(48.dp)) {
+                Icon(painterResource(R.drawable.ic_refresh), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.detail_server_reload))
             }
         }
@@ -201,7 +246,7 @@ private fun LocationCard(
     val scope = rememberCoroutineScope()
     val noMapApp = stringResource(R.string.detail_no_map_app)
     val location = report.draft.location
-    SectionCard(title = stringResource(R.string.form_section_location), isError = false) {
+    SectionCard(title = stringResource(R.string.form_section_location), isError = false, icon = R.drawable.ic_location) {
         if (location == null) {
             Notice(stringResource(R.string.detail_no_location), isError = false)
         } else {
@@ -217,7 +262,11 @@ private fun LocationCard(
                     }
                 },
                 modifier = Modifier.height(48.dp),
-            ) { Text(stringResource(R.string.detail_open_map)) }
+            ) {
+                Icon(painterResource(R.drawable.ic_map), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.detail_open_map))
+            }
         }
     }
 }
