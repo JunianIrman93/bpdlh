@@ -85,6 +85,7 @@ model Report {
   accuracyM          Float        @map("accuracy_m")
   locationCapturedAt DateTime     @map("location_captured_at") @db.Timestamptz(3)
   isMockLocation     Boolean      @map("is_mock_location")
+  locationAddress    String?      @map("location_address") @db.VarChar(300)
   status             ReportStatus @default(UPLOADING)
   reviewNote         String?      @map("review_note") @db.VarChar(500)
   reviewedById       String?      @map("reviewed_by") @db.Uuid

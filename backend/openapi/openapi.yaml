@@ -659,6 +659,13 @@ components:
           format: date-time
         is_mock:
           type: boolean
+        address:
+          type: string
+          nullable: true
+          maxLength: 300
+          description: >-
+            Alamat hasil geocoding terbalik di perangkat (nama jalan, gang, atau
+            tempat). Opsional; kosong bila perangkat belum dapat mencarinya.
 
     AttachmentManifestItem:
       type: object

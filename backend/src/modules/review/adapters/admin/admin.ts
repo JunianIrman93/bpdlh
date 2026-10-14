@@ -61,6 +61,7 @@ export function createAdmin(deps: {
             'accuracyM',
             'locationCapturedAt',
             'isMockLocation',
+            'locationAddress',
             'version',
             'user',
             'clientCreatedAt',

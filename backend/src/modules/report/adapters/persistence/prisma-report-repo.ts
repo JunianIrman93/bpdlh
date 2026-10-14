@@ -163,6 +163,7 @@ function contentColumns(content: ReportContent) {
     accuracyM: content.location.accuracyM,
     locationCapturedAt: content.location.capturedAt,
     isMockLocation: content.location.isMock,
+    locationAddress: content.location.address,
     clientCreatedAt: content.clientCreatedAt,
   };
 }
@@ -193,6 +194,7 @@ function toRecord(row: ReportRow): ReportRecord {
       accuracyM: row.accuracyM,
       capturedAt: row.locationCapturedAt,
       isMock: row.isMockLocation,
+      address: row.locationAddress,
     },
     clientCreatedAt: row.clientCreatedAt,
     status: row.status,

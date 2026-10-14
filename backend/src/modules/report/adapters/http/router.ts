@@ -31,6 +31,7 @@ const reportBody = z.object({
     accuracy_m: z.number().min(0),
     captured_at: isoDateTime,
     is_mock: z.boolean(),
+    address: z.string().trim().max(300).nullish(),
   }),
   client_created_at: isoDateTime,
   attachments: z
@@ -143,6 +144,7 @@ function toContent(body: z.infer<typeof reportBody>): ReportContent {
       accuracyM: body.location.accuracy_m,
       capturedAt: body.location.captured_at,
       isMock: body.location.is_mock,
+      address: body.location.address || null,
     },
     clientCreatedAt: body.client_created_at,
     attachments: body.attachments.map((a) => ({

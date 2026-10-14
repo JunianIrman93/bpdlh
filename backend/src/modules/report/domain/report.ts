@@ -44,6 +44,7 @@ export interface Location {
   accuracyM: number;
   capturedAt: Date;
   isMock: boolean;
+  address: string | null;
 }
 
 export interface ManifestItem {
@@ -151,6 +152,7 @@ export function sameContent(a: ReportContent, b: ReportContent): boolean {
     a.location.accuracyM === b.location.accuracyM &&
     a.location.capturedAt.getTime() === b.location.capturedAt.getTime() &&
     a.location.isMock === b.location.isMock &&
+    a.location.address === b.location.address &&
     sameManifest(a.attachments, b.attachments)
   );
 }

@@ -36,6 +36,7 @@ export function toDetailDto(report: ReportRecord) {
       accuracy_m: report.location.accuracyM,
       captured_at: report.location.capturedAt.toISOString(),
       is_mock: report.location.isMock,
+      address: report.location.address,
     },
     client_created_at: report.clientCreatedAt.toISOString(),
     created_at: report.createdAt.toISOString(),
