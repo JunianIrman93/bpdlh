@@ -15,6 +15,7 @@
     <string name="login_show_password">Tampilkan password</string>
     <string name="login_hide_password">Sembunyikan password</string>
     <string name="login_submit">Masuk</string>
+    <string name="login_loading">Sedang masuk</string>
     <string name="login_error_credentials">Email atau password salah</string>
     <string name="login_error_validation">Isian belum lengkap atau tidak valid</string>
     <string name="login_error_rate_limited">Terlalu banyak percobaan, coba lagi nanti</string>

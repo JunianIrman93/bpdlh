@@ -1,10 +1,12 @@
 package id.lapor.lh.feature.auth.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -257,20 +259,32 @@ private fun LoginScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = submit,
-                        enabled = canSubmit,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                    ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp,
-                            )
+                    val loadingLabel = stringResource(R.string.login_loading)
+                    AnimatedContent(
+                        targetState = uiState.isLoading,
+                        transitionSpec = { fadeIn(LaporLHMotion.effects()) togetherWith fadeOut(LaporLHMotion.effects()) },
+                        label = "loginSubmit",
+                    ) { loading ->
+                        if (loading) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .semantics { contentDescription = loadingLabel },
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
+                            }
                         } else {
-                            Text(stringResource(R.string.login_submit))
+                            Button(
+                                onClick = submit,
+                                enabled = canSubmit,
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                            ) {
+                                Text(stringResource(R.string.login_submit))
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
