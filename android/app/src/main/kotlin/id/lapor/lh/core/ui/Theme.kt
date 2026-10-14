@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 
 private val LaporLHLightColors =
     lightColorScheme(
@@ -86,15 +88,19 @@ private val LaporLHDarkColors =
         surfaceTint = BluePrimaryDark,
     )
 
+val LocalDarkTheme = staticCompositionLocalOf { false }
+
 @Composable
 fun LaporLHTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) LaporLHDarkColors else LaporLHLightColors,
-        typography = LaporLHTypography,
-        shapes = LaporLHShapes,
-        content = content,
-    )
+    CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) LaporLHDarkColors else LaporLHLightColors,
+            typography = LaporLHTypography,
+            shapes = LaporLHShapes,
+            content = content,
+        )
+    }
 }

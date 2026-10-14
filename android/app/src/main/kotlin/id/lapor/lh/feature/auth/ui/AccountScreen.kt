@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +27,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.lapor.lh.BuildConfig
 import id.lapor.lh.R
+import id.lapor.lh.core.ui.ThemeMode
 import id.lapor.lh.feature.auth.domain.Role
 import id.lapor.lh.feature.report.ui.SectionCard
 import id.lapor.lh.feature.report.ui.displayDateTime
@@ -55,7 +60,12 @@ fun AccountRoute(
     viewModel: AccountViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    AccountScreen(uiState = uiState, onBack = onBack, onLogout = viewModel::logout)
+    AccountScreen(
+        uiState = uiState,
+        onBack = onBack,
+        onThemeModeChange = viewModel::setThemeMode,
+        onLogout = viewModel::logout,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +73,7 @@ fun AccountRoute(
 private fun AccountScreen(
     uiState: AccountUiState,
     onBack: () -> Unit,
+    onThemeModeChange: (ThemeMode) -> Unit,
     onLogout: () -> Unit,
 ) {
     var confirmLogout by rememberSaveable { mutableStateOf(false) }
@@ -143,6 +154,10 @@ private fun AccountScreen(
                     },
                 )
             }
+            SectionCard(title = stringResource(R.string.account_section_appearance), isError = false, icon = R.drawable.ic_appearance) {
+                ThemeModeSelector(selected = uiState.themeMode, onSelect = onThemeModeChange)
+                SecondaryText(stringResource(R.string.theme_system_hint))
+            }
             SectionCard(title = stringResource(R.string.account_section_app), isError = false, icon = R.drawable.ic_info) {
                 Text(stringResource(R.string.account_version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodyLarge)
                 SecondaryText(stringResource(R.string.app_prototype_notice))
@@ -199,6 +214,47 @@ private fun AccountScreen(
         )
     }
 }
+
+@Composable
+private fun ThemeModeSelector(
+    selected: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+) {
+    val modes = ThemeMode.entries
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        modes.forEachIndexed { index, mode ->
+            SegmentedButton(
+                selected = mode == selected,
+                onClick = { onSelect(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size, baseShape = MaterialTheme.shapes.medium),
+                icon = {
+                    Icon(
+                        painterResource(mode.iconRes()),
+                        contentDescription = null,
+                        modifier = Modifier.size(SegmentedButtonDefaults.IconSize),
+                    )
+                },
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(stringResource(mode.labelRes()), maxLines = 1)
+            }
+        }
+    }
+}
+
+private fun ThemeMode.labelRes(): Int =
+    when (this) {
+        ThemeMode.SYSTEM -> R.string.theme_system
+        ThemeMode.LIGHT -> R.string.theme_light
+        ThemeMode.DARK -> R.string.theme_dark
+    }
+
+private fun ThemeMode.iconRes(): Int =
+    when (this) {
+        ThemeMode.SYSTEM -> R.drawable.ic_theme_system
+        ThemeMode.LIGHT -> R.drawable.ic_theme_light
+        ThemeMode.DARK -> R.drawable.ic_theme_dark
+    }
 
 @Composable
 private fun SecondaryText(text: String) {

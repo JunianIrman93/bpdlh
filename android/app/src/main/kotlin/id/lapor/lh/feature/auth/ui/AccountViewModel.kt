@@ -3,6 +3,8 @@ package id.lapor.lh.feature.auth.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import id.lapor.lh.core.settings.ThemeSettings
+import id.lapor.lh.core.ui.ThemeMode
 import id.lapor.lh.feature.auth.domain.AuthRepository
 import id.lapor.lh.feature.auth.domain.LogoutUseCase
 import id.lapor.lh.feature.auth.domain.User
@@ -25,6 +27,7 @@ data class AccountUiState(
     val unsentCount: Int = 0,
     val lastSyncAt: Long? = null,
     val isLoggingOut: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
 )
 
 @HiltViewModel
@@ -35,6 +38,7 @@ class AccountViewModel
         reportRepository: ReportRepository,
         syncRepository: SyncRepository,
         private val logoutUseCase: LogoutUseCase,
+        private val themeSettings: ThemeSettings,
     ) : ViewModel() {
         private val loggingOut = MutableStateFlow(false)
 
@@ -44,14 +48,20 @@ class AccountViewModel
                 reportRepository.observeReports(),
                 syncRepository.observeLastSyncAt(),
                 loggingOut,
-            ) { user, reports, lastSyncAt, isLoggingOut ->
+                themeSettings.themeMode,
+            ) { user, reports, lastSyncAt, isLoggingOut, themeMode ->
                 AccountUiState(
                     user = user,
                     unsentCount = reports.count { it.status in unsentStatuses },
                     lastSyncAt = lastSyncAt,
                     isLoggingOut = isLoggingOut,
+                    themeMode = themeMode,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AccountUiState())
+
+        fun setThemeMode(mode: ThemeMode) {
+            viewModelScope.launch { themeSettings.setThemeMode(mode) }
+        }
 
         fun logout() {
             if (loggingOut.value) return
