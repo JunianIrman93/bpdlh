@@ -28,6 +28,9 @@ import kotlin.coroutines.resume
 private const val LOCATION_TIMEOUT_MS = 20_000L
 private const val ADDRESS_TIMEOUT_MS = 10_000L
 private const val MAX_ADDRESS_LENGTH = 300
+private const val MAX_ADDRESS_DISTANCE_M = 1_000f
+private const val ADDRESS_CANDIDATES = 5
+private val PLUS_CODE_PREFIX = Regex("""^[23456789CFGHJMPQRVWX]{2,8}\+[23456789CFGHJMPQRVWX]{0,3}[ ,]""")
 private val ADDRESS_LOCALE: Locale = Locale.forLanguageTag("id-ID")
 
 class AndroidLocationProvider
@@ -67,30 +70,40 @@ class AndroidLocationProvider
         override suspend fun addressOf(location: ReportLocation): String? {
             if (!Geocoder.isPresent()) return null
             val geocoder = Geocoder(context, ADDRESS_LOCALE)
-            val address =
+            val candidates =
                 withTimeoutOrNull(ADDRESS_TIMEOUT_MS) { geocode(geocoder, location.latitude, location.longitude) }
-                    ?: return null
-            return address.describe()?.take(MAX_ADDRESS_LENGTH)
+                    .orEmpty()
+                    .filter { it.isNear(location.latitude, location.longitude) }
+                    .mapNotNull { address -> address.describe()?.let { address to it } }
+            val area =
+                candidates
+                    .groupingBy { (address, _) -> address.area() }
+                    .eachCount()
+                    .maxByOrNull { it.value }
+                    ?.key
+            val inArea = candidates.filter { (address, _) -> address.area() == area }
+            val chosen = inArea.firstOrNull { (_, line) -> !PLUS_CODE_PREFIX.containsMatchIn(line) } ?: inArea.firstOrNull()
+            return chosen?.second?.take(MAX_ADDRESS_LENGTH)
         }
 
         private suspend fun geocode(
             geocoder: Geocoder,
             latitude: Double,
             longitude: Double,
-        ): Address? =
+        ): List<Address> =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 suspendCancellableCoroutine { continuation ->
                     geocoder.getFromLocation(
                         latitude,
                         longitude,
-                        1,
+                        ADDRESS_CANDIDATES,
                         object : Geocoder.GeocodeListener {
                             override fun onGeocode(addresses: MutableList<Address>) {
-                                if (continuation.isActive) continuation.resume(addresses.firstOrNull())
+                                if (continuation.isActive) continuation.resume(addresses.toList())
                             }
 
                             override fun onError(errorMessage: String?) {
-                                if (continuation.isActive) continuation.resume(null)
+                                if (continuation.isActive) continuation.resume(emptyList())
                             }
                         },
                     )
@@ -99,12 +112,24 @@ class AndroidLocationProvider
                 withContext(Dispatchers.IO) {
                     try {
                         @Suppress("DEPRECATION")
-                        geocoder.getFromLocation(latitude, longitude, 1)?.firstOrNull()
+                        geocoder.getFromLocation(latitude, longitude, ADDRESS_CANDIDATES).orEmpty()
                     } catch (e: IOException) {
-                        null
+                        emptyList()
                     }
                 }
             }
+
+        private fun Address.isNear(
+            latitude: Double,
+            longitude: Double,
+        ): Boolean {
+            if (!hasLatitude() || !hasLongitude()) return true
+            val distance = FloatArray(1)
+            Location.distanceBetween(latitude, longitude, this.latitude, this.longitude, distance)
+            return distance[0] <= MAX_ADDRESS_DISTANCE_M
+        }
+
+        private fun Address.area(): String? = subAdminArea ?: locality ?: adminArea
 
         private fun Address.describe(): String? {
             val line =
