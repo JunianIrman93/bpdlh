@@ -13,7 +13,7 @@ Repositori ini berisi aplikasi Android (Kotlin, Jetpack Compose) di `android/`, 
 | Autentikasi JWT, exp 5 menit | Access token JWT HS256 dengan `exp = iat + 300`. Server menolak token yang sudah lewat exp tanpa masa tenggang. |
 | Setelah 5 menit token masih bisa dipakai | Aplikasi memperbarui token sendiri dengan tanda tangan kunci perangkat di Android Keystore, sehingga pengguna tidak perlu login ulang, juga setelah offline. Rinciannya di bagian Autentikasi. |
 | Studi kasus bebas | Laporan lapangan kegiatan dana lingkungan, misalnya penanaman bibit mangrove. |
-| Form teks, berkas, dokumen, foto, gambar, lokasi | Satu form laporan: judul dan deskripsi, foto dari kamera sistem, gambar dari Photo Picker, dokumen (PDF, DOCX, XLSX), berkas (TXT, CSV), dan lokasi GPS dengan akurasi dan waktu pengambilan. |
+| Form teks, berkas, dokumen, foto, gambar, lokasi | Satu form laporan: judul dan deskripsi, foto dari kamera sistem, gambar dari Photo Picker, dokumen (PDF, DOCX, XLSX), berkas (TXT, CSV), dan lokasi GPS dengan akurasi, waktu pengambilan, serta alamat (nama jalan, gang, atau tempat) bila tersedia. |
 | Backend Node.js dan Express | Express 5 dengan TypeScript, Prisma, PostgreSQL, dan panel admin AdminJS. |
 | Repositori GitHub | Monorepo dengan CI untuk Android dan backend, serta APK rilis di GitHub Releases. |
 
@@ -130,6 +130,7 @@ Kunci perangkat berlaku 30 hari sejak pemakaian terakhir. Selama masa itu aplika
 ## Keterbatasan yang diketahui
 
 - Laporan yang dibuat di perangkat lain hanya muncul sebagai ringkasan (judul, kategori, tanggal, dan status). Deskripsi, lokasi, dan lampirannya belum diambil dari server, sehingga kartunya menampilkan 0 lampiran.
+- Alamat lokasi dicari dengan Geocoder bawaan Android dan membutuhkan internet. Laporan yang dikirim sebelum alamat sempat dicari tetap terkirim tanpa alamat; verifikator tetap melihat koordinatnya.
 - Basis data lokal tidak dienkripsi dan hanya dilindungi sandbox aplikasi. Tidak ada certificate pinning.
 - Nonce autentikasi, batas laju, dan sesi panel admin disimpan di memori satu instance. Verifikator perlu masuk ulang ke panel setelah server restart atau tidur.
 - Kunci perangkat dapat disalahgunakan lewat hooking di perangkat root. Key attestation dan Play Integrity di luar cakupan versi ini.
