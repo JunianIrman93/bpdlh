@@ -50,6 +50,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
@@ -87,6 +91,9 @@ fun LoginRoute(viewModel: LoginViewModel = hiltViewModel()) {
 private const val PHOTO_HEIGHT_FRACTION = 0.36f
 private const val SHEET_MIN_HEIGHT_FRACTION = 0.7f
 private val PHOTO_MIN_PEEK = 96.dp
+private val SHEET_BLEND_HEIGHT = 56.dp
+private val SHEET_CORNER_RADIUS = 24.dp
+private const val SHEET_BLEND_ALPHA = 0.8f
 
 private val dimmedPhoto = ColorFilter.colorMatrix(ColorMatrix().apply { setToScale(0.7f, 0.7f, 0.7f, 1f) })
 
@@ -135,10 +142,28 @@ private fun LoginScreen(
                     .imePadding(),
         ) {
             val sheetMinHeight = (screenHeight * SHEET_MIN_HEIGHT_FRACTION).coerceAtMost(maxHeight - PHOTO_MIN_PEEK).coerceAtLeast(0.dp)
+            val blendColor = MaterialTheme.colorScheme.background.copy(alpha = SHEET_BLEND_ALPHA)
             Surface(
                 color = MaterialTheme.colorScheme.background,
                 shape = MaterialTheme.shapes.extraLarge.copy(bottomStart = ZeroCornerSize, bottomEnd = ZeroCornerSize),
-                modifier = Modifier.fillMaxWidth().heightIn(min = sheetMinHeight),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .drawBehind {
+                            val blendEnd = (SHEET_BLEND_HEIGHT + SHEET_CORNER_RADIUS).toPx()
+                            val blendStop = SHEET_BLEND_HEIGHT.toPx() / blendEnd
+                            drawRect(
+                                brush =
+                                    Brush.verticalGradient(
+                                        0f to Color.Transparent,
+                                        blendStop to blendColor,
+                                        1f to blendColor,
+                                        endY = blendEnd,
+                                    ),
+                                size = Size(size.width, blendEnd),
+                            )
+                        }.padding(top = SHEET_BLEND_HEIGHT)
+                        .heightIn(min = sheetMinHeight),
             ) {
                 Column(
                     modifier =
