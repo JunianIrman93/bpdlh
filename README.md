@@ -13,7 +13,7 @@ Repositori ini berisi aplikasi Android (Kotlin, Jetpack Compose) di `android/`, 
 | Autentikasi JWT, exp 5 menit | Access token JWT HS256 dengan `exp = iat + 300`. Server menolak token yang sudah lewat exp tanpa masa tenggang. |
 | Setelah 5 menit token masih bisa dipakai | Aplikasi memperbarui token sendiri dengan tanda tangan kunci perangkat di Android Keystore, sehingga pengguna tidak perlu login ulang, juga setelah offline. Rinciannya di bagian Autentikasi. |
 | Studi kasus bebas | Laporan lapangan kegiatan dana lingkungan, misalnya penanaman bibit mangrove. |
-| Form teks, berkas, dokumen, foto, gambar, lokasi | Satu form laporan: judul dan deskripsi, foto dari kamera sistem, gambar dari Photo Picker, dokumen (PDF, DOCX, XLSX), berkas (TXT, CSV), dan lokasi GPS dengan akurasi, waktu pengambilan, serta alamat (nama jalan, gang, atau tempat) bila tersedia. |
+| Form teks, berkas, dokumen, foto, gambar, lokasi | Satu form laporan: judul dan deskripsi, foto dari kamera sistem, gambar dari Photo Picker, dokumen (PDF, DOCX, XLSX) dan berkas (TXT, CSV) lewat satu pilihan Dokumen, dan lokasi GPS dengan akurasi, waktu pengambilan, serta alamat (nama jalan, gang, atau tempat) bila tersedia. |
 | Backend Node.js dan Express | Express 5 dengan TypeScript, Prisma, PostgreSQL, dan panel admin AdminJS. |
 | Repositori GitHub | Monorepo dengan CI untuk Android dan backend, serta APK rilis di GitHub Releases. |
 
